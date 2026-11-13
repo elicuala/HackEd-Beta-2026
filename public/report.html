@@ -1,39 +1,39 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Your report card · Scam Drill</title>
-<script>(()=>{try{const t=localStorage.getItem("scamDrill.theme")||"auto",s=Number(localStorage.getItem("scamDrill.textSize"))||1;document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.style.setProperty("--scale",s)}catch(e){}})()</script>
-<link rel="preload" href="/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/js/theme-boot.js"></script>
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<div class="aurora" aria-hidden="true"><i></i><i></i></div>
-<div class="grain" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to the report</a>
 <div class="page">
-<header class="nav wrap"><div class="nav-bar refract">
-  <a class="brand" href="/"><i aria-hidden="true"></i>SCAM DRILL</a>
-  <div class="nav-right">
-    <nav aria-label="Main">
-      <a href="/">Drill</a>
-      <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live board</a>
-      <a href="/phone.html">Phone</a>
-    </nav>
+  <div class="page-head">
+    <header class="sheet-head">
+      <div class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></div>
+      <nav class="seg" aria-label="Main">
+        <a href="/">Drill</a>
+        <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live</a>
+        <a href="/phone.html">Phone</a>
+      </nav>
+    </header>
     <div class="tools"></div>
   </div>
-</div></header>
-<main class="wrap" id="main" style="padding-top:32px">
-  <section id="report" class="report" aria-live="polite"></section>
-  <section id="empty" class="glass declined" hidden>
-    <h1 style="font:700 28px/1.2 var(--display);margin:0">No drill yet</h1>
-    <p>Your report card appears here after a practice call.</p>
-    <a class="go" href="/" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Start a practice drill</a>
-  </section>
-</main>
-<footer><div class="wrap">Nothing from your drill was recorded or stored. This report lives only in this browser tab.</div></footer>
+
+  <main id="main" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:14px">
+    <section id="report" class="report" aria-live="polite"></section>
+    <section id="empty" class="decision" hidden>
+      <div class="decision-icon" aria-hidden="true" style="background:var(--accent)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></div>
+      <div>
+        <h1 style="margin:0 0 4px;font:600 1.13rem/1.3 var(--font-display)">No drill yet</h1>
+        <p>Your report card appears here after a practice call.</p>
+        <a class="go" href="/">Start a practice call</a>
+      </div>
+    </section>
+  </main>
+  <footer class="page-foot">Nothing from your drill was recorded or stored. This report lives only in this browser tab.</footer>
 </div>
 <script type="module" src="/js/ui/prefs.js"></script>
 <script type="module" src="/js/report.js"></script>

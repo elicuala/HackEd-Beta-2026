@@ -183,6 +183,7 @@ function ringNow() {
   vt(ringNowNow);
 }
 function ringNowNow() {
+  document.body.dataset.hascall = "1"; // the conversation section appears in the panel
   resetCall();
   setStep("answer");
   showPanel("call");

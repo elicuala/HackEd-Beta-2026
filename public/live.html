@@ -1,69 +1,65 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Live board · Scam Drill</title>
 <meta name="description" content="Watch practice scam calls happen live: the conversation, the ref's calls, and the unmask.">
-<script>(()=>{try{const t=localStorage.getItem("scamDrill.theme")||"auto",s=Number(localStorage.getItem("scamDrill.textSize"))||1;document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.style.setProperty("--scale",s)}catch(e){}})()</script>
-<link rel="preload" href="/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/js/theme-boot.js"></script>
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<div class="aurora" aria-hidden="true"><i></i><i></i></div>
-<div class="grain" aria-hidden="true"></div>
-<div class="page">
-<header class="nav wrap"><div class="nav-bar refract">
-  <a class="brand" href="/"><i aria-hidden="true"></i>SCAM DRILL</a>
-  <div class="nav-right">
-    <nav aria-label="Main">
-      <a href="/">Drill</a>
-      <a href="/live.html" aria-current="page"><span class="dot-live" aria-hidden="true"></span>Live board</a>
-      <a href="/phone.html">Phone</a>
-    </nav>
-    <span class="chip" id="conn" data-s="connecting" role="status"><i></i><span id="connText">Connecting</span></span>
-    <div class="tools"></div>
-  </div>
-</div></header>
+<a class="skip" href="#main">Skip to the conversation</a>
 
-<main class="wrap" id="main">
-  <div class="hero" style="padding-block:40px 28px">
-    <span class="kicker">Live board · numbers always hidden</span>
-    <h1>Watch the drills <span>as they happen.</span></h1>
-    <p class="lede">Every drill someone chose to share appears here: the scam caller, their answers, the ref's calls, and the moment the caller drops the act.</p>
-  </div>
+<div class="app">
+  <aside class="sheet" aria-label="Live drills">
+    <header class="sheet-head">
+      <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></h1>
+      <nav class="seg" aria-label="Main" style="--active:1">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <a href="/">Drill</a>
+        <a href="/live.html" aria-current="page"><span class="dot-live" aria-hidden="true"></span>Live</a>
+        <a href="/phone.html">Phone</a>
+      </nav>
+    </header>
 
-  <div class="board">
-    <section class="glass" aria-labelledby="listH">
-      <div class="label"><span id="listH">Drills</span><b id="listMeta">…</b></div>
-      <ul class="drills" id="drills" aria-labelledby="listH"></ul>
-      <div class="pad" style="padding-top:0">
-        <label class="toggle" for="follow"><span><b>Follow new drills</b><small>Jump to each new call automatically.</small></span><input class="sw" type="checkbox" id="follow" checked></label>
-      </div>
-    </section>
+    <div class="section-head"><h2 class="section-title" id="listH">Live drills</h2><span class="section-meta" id="listMeta">…</span></div>
+    <p class="section-hint">Drills people chose to share, as they happen. Numbers are always hidden.</p>
+    <div class="card"><ul class="drills" id="drills" aria-labelledby="listH"></ul></div>
 
-    <div class="col">
-      <section class="glass" aria-labelledby="watchH">
-        <div class="watch-head">
-          <h2 id="watchH">Pick a drill to watch</h2>
-          <div class="minis">
-            <span class="badge" id="watchStatus" hidden></span>
-            <div class="strikes" id="strikes" aria-live="polite"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
-          </div>
-        </div>
-        <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="watchH"><p class="empty">The conversation shows up here, live.</p></div>
-      </section>
-      <section class="glass" aria-labelledby="rvH">
-        <div class="label"><span id="rvH">Ref's view</span><b>Rules + AI judge</b></div>
-        <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here, with where it came from and how sure it was.</p></div>
-      </section>
+    <div class="section-head"><h2 class="section-title">Options</h2></div>
+    <div class="card group toggles">
+      <label class="toggle" for="follow"><span><b>Follow new drills</b><small>Jump to each new call automatically.</small></span><input class="sw" type="checkbox" id="follow" checked></label>
     </div>
-  </div>
-</main>
-<footer><div class="wrap">Only drills whose caller ticked "Show on the live board" appear here. Digits and spoken numbers are hidden. Nothing is recorded: drills drop off the board 15 minutes after they end.</div></footer>
+
+    <p class="panel-foot">Only drills whose caller turned on "Show on the live board" appear here. Nothing is recorded: drills leave the board 15 minutes after they end.</p>
+  </aside>
+
+  <main class="stage-area" id="main">
+    <div class="float float-tl"><span class="chip" id="conn" data-s="connecting" role="status"><i></i><span id="connText">Connecting</span></span></div>
+    <div class="float float-tr tools"></div>
+
+    <div class="stage-inner">
+      <div class="watch">
+        <section class="card" aria-labelledby="watchH">
+          <div class="watch-head">
+            <h2 id="watchH">Pick a drill to watch</h2>
+            <div class="minis">
+              <span class="badge" id="watchStatus" hidden></span>
+              <div class="strikes" id="strikes" aria-live="polite"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
+            </div>
+          </div>
+          <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="watchH"><p class="empty">The conversation shows up here, live.</p></div>
+        </section>
+        <details class="card" open>
+          <summary><span>Ref's view<small>Why the ref made each call: rules engine + AI judge</small></span></summary>
+          <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here, with where it came from and how sure it was.</p></div>
+        </details>
+      </div>
+    </div>
+  </main>
 </div>
+
 <script type="module" src="/js/ui/prefs.js"></script>
 <script type="module" src="/js/live.js"></script>
 </body>

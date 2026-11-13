@@ -1,15 +1,15 @@
-// Owned by Agent F. The voice orb: a living visualizer that doubles as the strike meter (Ref Desk concept).
-// Driven by call status, strikes, and (when music is on) the score's loudness.
+// Owned by Agent F. The voice orb: a living visualizer that doubles as the strike meter.
+// Colours come from the theme's iOS system colours (CSS variables), re-read when the theme changes.
 import { musicLevel } from "../audio/engine.js";
 
-const COL = {
-  ring: [160, 140, 255],
-  connecting: [160, 140, 255],
-  live: [91, 231, 240],
-  scammer_speaking: [255, 107, 136],
-  ref_speaking: [255, 203, 102],
-  unmasking: [255, 107, 136],
-  ended: [85, 242, 176],
+const MODE_VAR = {
+  ring: "--indigo",
+  connecting: "--indigo",
+  live: "--blue",
+  scammer_speaking: "--red",
+  ref_speaking: "--orange",
+  unmasking: "--indigo",
+  ended: "--green",
 };
 const N = 48;
 const COS = [];
@@ -20,30 +20,50 @@ for (let i = 0; i < N; i++) {
   SIN.push(Math.sin(a));
 }
 
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
+  const colors = {};
+  for (const [mode, name] of Object.entries(MODE_VAR)) colors[mode] = v(name, "#007aff");
+  return {
+    colors,
+    red: v("--red", "#ff3b30"),
+    track: v("--fill-strong", "rgba(0,0,0,.08)"),
+    core: v("--orb-core", "#ffffff"),
+  };
+}
+
 export function createOrb(canvas) {
   const cx = canvas.getContext("2d");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const st = { mode: "ring", strikes: 0, red: false };
+  let theme = readTheme();
   let looping = false;
   let last = 0;
+
+  new MutationObserver(() => {
+    theme = readTheme();
+    if (!looping) draw(800);
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   function draw(t) {
     const W = canvas.width;
     const C = W / 2;
-    cx.clearRect(0, 0, W, W);
-    const c = COL[st.mode] || COL.live;
-    const rgb = `${c[0]},${c[1]},${c[2]}`;
+    const col = theme.colors[st.mode] ?? theme.colors.live;
     const talk = st.mode === "scammer_speaking" || st.mode === "ref_speaking" || st.mode === "unmasking";
     const music = reduced ? 0 : musicLevel();
-    const g = cx.createRadialGradient(C, C, 10, C, C, 190);
-    g.addColorStop(0, `rgba(${rgb},.55)`);
-    g.addColorStop(0.45, `rgba(${rgb},.14)`);
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    cx.fillStyle = g;
+    cx.clearRect(0, 0, W, W);
+
+    // Soft halo.
+    cx.globalAlpha = 0.16;
+    cx.fillStyle = col;
     cx.beginPath();
-    cx.arc(C, C, 200, 0, Math.PI * 2);
+    cx.arc(C, C, 150 + (talk ? 6 * Math.sin(t / 120) : 0), 0, Math.PI * 2);
     cx.fill();
-    const base = 96;
+    cx.globalAlpha = 1;
+
+    // Voice bars around the core.
+    const base = 92;
     const amp = (talk ? 26 : st.mode === "ring" ? 14 : 8) + music * 18;
     const sp = talk ? 140 : 420;
     cx.beginPath();
@@ -52,46 +72,51 @@ export function createOrb(canvas) {
       cx.moveTo(C + COS[i] * base, C + SIN[i] * base);
       cx.lineTo(C + COS[i] * (base + h), C + SIN[i] * (base + h));
     }
-    cx.strokeStyle = `rgba(${rgb},.85)`;
+    cx.strokeStyle = col;
     cx.lineWidth = 5;
     cx.lineCap = "round";
     cx.stroke();
-    const core = cx.createRadialGradient(C - 18, C - 22, 6, C, C, 78);
-    core.addColorStop(0, "rgba(255,255,255,.95)");
-    core.addColorStop(0.25, `rgba(${rgb},.85)`);
-    core.addColorStop(1, "rgba(10,14,30,.9)");
-    cx.fillStyle = core;
+
+    // Core: the system colour, lit from the top-left.
+    const r = 72 + (talk ? 3 * Math.sin(t / 90) : 0);
+    cx.fillStyle = col;
     cx.beginPath();
-    cx.arc(C, C, 74 + (talk ? 3 * Math.sin(t / 90) : 0), 0, Math.PI * 2);
+    cx.arc(C, C, r, 0, Math.PI * 2);
     cx.fill();
+    const shine = cx.createRadialGradient(C - 22, C - 26, 4, C, C, r);
+    shine.addColorStop(0, "rgba(255,255,255,.75)");
+    shine.addColorStop(0.45, "rgba(255,255,255,.08)");
+    shine.addColorStop(1, "rgba(0,0,0,.18)");
+    cx.fillStyle = shine;
+    cx.beginPath();
+    cx.arc(C, C, r, 0, Math.PI * 2);
+    cx.fill();
+
     // Strike meter: three arcs.
     const R = 176;
     const gap = 0.18;
     const seg = (Math.PI * 2 - 3 * gap) / 3;
+    cx.lineCap = "round";
     for (let i = 0; i < 3; i++) {
       const s = -Math.PI / 2 + gap / 2 + i * (seg + gap);
       const on = i < st.strikes;
-      cx.lineCap = "round";
-      if (on) {
-        cx.lineWidth = 22;
-        cx.strokeStyle = st.red ? "rgba(255,51,85,.22)" : "rgba(255,107,136,.22)";
-        cx.beginPath();
-        cx.arc(C, C, R, s, s + seg);
-        cx.stroke();
-      }
-      cx.lineWidth = 10;
-      cx.strokeStyle = on ? (st.red ? "#FF3355" : "#FF6B88") : "rgba(255,255,255,.10)";
+      cx.lineWidth = on ? 12 : 10;
+      cx.strokeStyle = on ? theme.red : theme.track;
       cx.beginPath();
       cx.arc(C, C, R, s, s + seg);
       cx.stroke();
     }
+
+    // Ringing: a ripple.
     if (st.mode === "ring") {
       const p = (t / 1400) % 1;
-      cx.strokeStyle = `rgba(160,140,255,${1 - p})`;
+      cx.globalAlpha = 1 - p;
+      cx.strokeStyle = col;
       cx.lineWidth = 3;
       cx.beginPath();
-      cx.arc(C, C, 96 + p * 110, 0, Math.PI * 2);
+      cx.arc(C, C, 92 + p * 110, 0, Math.PI * 2);
       cx.stroke();
+      cx.globalAlpha = 1;
     }
   }
 

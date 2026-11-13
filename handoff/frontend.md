@@ -5,7 +5,22 @@
 ## Status
 Built on top of P1's "Ref Desk" design (`design-concepts/6-ref-desk.html`): the same look, now wired to the real system. **P1: pull `main` before continuing.** The scripted page is now the real drill page.
 
-## UI revamp: "Liquid Glass" (after the live board)
+## UI: WayKin design system (replaces the Liquid Glass look)
+- **The template is WayKin** (`~/Hackathon_project/Waykin/frontend/src/styles.css`). It's Apple-style:
+  - system fonts, iOS system colours, `#f5f5f7` grouped background, white 18px cards, 0.5px separators
+  - a frosted sticky header with a centred title and a segmented nav with a sliding thumb
+  - section titles with meta text, list rows with icon tiles, iOS switches
+  - one blue pill for the main action (`#0071e3` fill in both themes, as in WayKin) and grey pills for the rest
+  - round glass buttons floating on the stage, pure black dark mode
+- **Layout:** a 400px side panel (pick a call, settings, the conversation, the Ref's view) next to a stage. The stage plays the part of WayKin's map: a welcome when idle, the call card, then the report. Under 900px it stacks as header → stage → panel.
+- **Details:**
+  - the conversation uses iMessage-style bubbles (grey for the caller, blue for you)
+  - the orb reads its colours from the theme (`--indigo`, `--blue`, `--red`, `--orange`, `--green`)
+  - the theme boots from `js/theme-boot.js` (a file, like WayKin's `theme.js`)
+  - the web fonts were removed (system fonts only)
+- **Kept:** every element ID, view transitions, the step guide, theme and text-size buttons, reduced-motion and reduced-transparency support. AA contrast in both themes (axe: 0 violations).
+
+## UI revamp: "Liquid Glass" (superseded by the WayKin design above)
 - **`css/app.css`** replaces `desk.css`. It covers:
   - frosted glass surfaces with specular highlights and a moving rim sheen on the floating nav
   - a drifting colour background with fine grain
