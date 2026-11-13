@@ -1,4 +1,4 @@
-// STUB (owned by Agent L). Keep these exact signatures. Add grandkid.json and bank_fraud.json.
+// Owned by Agent L. Loads every scenario JSON in this folder. Keep these exact signatures.
 import { readFileSync, readdirSync } from "node:fs";
 import { SCENARIO_FIELDS } from "../shared/contract.js";
 
