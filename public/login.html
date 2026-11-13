@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Account · Scam Drill</title>
+<script src="/js/theme-boot.js"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to your account</a>
+
+<div class="app">
+  <aside class="sheet" aria-label="Account">
+    <header class="sheet-head">
+      <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></h1>
+      <nav class="seg" aria-label="Main" style="--active:3;--count:4">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <a href="/">Drill</a>
+        <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live</a>
+        <a href="/phone.html">Phone</a>
+        <a href="/login.html" aria-current="page" data-account>Account</a>
+      </nav>
+    </header>
+
+    <!-- Logged out: log in or sign up -->
+    <section id="authPanel" class="pane" hidden aria-labelledby="authH">
+      <div class="section-head"><h2 class="section-title" id="authH">Your account</h2></div>
+      <div class="auth-tabs" role="tablist" aria-label="Log in or sign up">
+        <button type="button" role="tab" id="tabLogin" aria-controls="authForm" aria-selected="true">Log in</button>
+        <button type="button" role="tab" id="tabSignup" aria-controls="authForm" aria-selected="false">Sign up</button>
+      </div>
+
+      <form id="authForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
+        <div class="card form">
+          <div class="field"><label for="email">Email</label>
+            <input class="text" id="email" name="email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="password">Password</label>
+            <input class="text" id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+            <small id="pwHint" hidden>At least 8 characters.</small></div>
+          <div class="field" id="phoneField" hidden><label for="phone">Phone number</label>
+            <input class="text" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="780 555 1234">
+            <small>The number practice calls would ring. Only the last four digits are ever shown.</small></div>
+        </div>
+        <div id="errorBox" class="notice" role="alert" hidden><p id="errorText"></p></div>
+        <button class="go" id="submit" type="submit">Log in</button>
+      </form>
+      <p class="fine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Your email and password are stored only as secure hashes, never as you typed them.</span></p>
+    </section>
+
+    <!-- Logged in -->
+    <section id="accountPanel" class="pane" hidden aria-labelledby="accH">
+      <div class="section-head"><h2 class="section-title" id="accH">Your account</h2></div>
+      <div class="card account-card">
+        <b>You're logged in.</b>
+        <span>Phone on file: <span id="accPhone"></span></span>
+      </div>
+      <div class="btnrow">
+        <a class="go" href="/">Start a practice call</a>
+        <button class="go ghost" id="logout" type="button">Log out</button>
+      </div>
+    </section>
+
+    <p class="panel-foot">Accounts are optional. You can do a practice call without one.</p>
+  </aside>
+
+  <main class="stage-area" id="main">
+    <div class="float float-tr tools"></div>
+    <div class="stage-inner">
+      <div class="welcome">
+        <div class="welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></div>
+        <span class="kicker">Your account</span>
+        <h2 id="stageTitle">Log in to keep your number handy.</h2>
+        <p>Your account holds the phone number practice calls ring. Your email and password are hashed before they're stored.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/js/ui/prefs.js"></script>
+<script type="module" src="/js/login.js"></script>
+</body>
+</html>

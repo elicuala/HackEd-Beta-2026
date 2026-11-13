@@ -420,3 +420,17 @@ body:not([data-hascall]) .conv{display:none}
   #callPanel,#report,#errorBox{scroll-margin-top:118px}
 }
 @media (max-width:900px){.sheet-head{z-index:20}}
+
+/* ---------- account (login.html) ---------- */
+input.text{width:100%;min-height:44px;padding:0 14px;border-radius:12px;border:.5px solid var(--separator);background:var(--bg);color:var(--text);font-size:1rem}
+input.text:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+input.text[aria-invalid="true"]{border-color:var(--red)}
+.field:last-child{border-bottom:0}
+.field small{color:var(--text-2);font-size:.8rem;line-height:1.35}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:4px 0 16px;border-radius:980px;background:var(--fill)}
+.auth-tabs button{min-height:36px;border:0;border-radius:980px;background:transparent;color:var(--text-2);font-weight:500;cursor:pointer}
+.auth-tabs button[aria-selected="true"]{background:var(--card);color:var(--text);font-weight:600;box-shadow:var(--card-shadow)}
+.form.card{padding:4px 16px}
+.account-card{display:grid;gap:6px;padding:18px 16px}
+.account-card b{font:600 1.33rem/1.2 var(--font-display)}
+.account-card span{color:var(--text-2);font-size:.93rem}
