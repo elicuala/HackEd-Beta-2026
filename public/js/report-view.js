@@ -57,12 +57,10 @@ export function renderReport(host, result, opts = {}) {
   ring.append(ringIn);
   const words = el("div");
   const kicker = el("div", "kicker", `Report card · ${title}`);
-  kicker.style.marginBottom = "10px";
   const h = el(opts.standalone ? "h1" : "h2", null, passed
     ? `You passed the ${title} drill.`
     : "Not this time, and that's exactly what practice is for.");
   h.id = "repH";
-  h.style.font = "700 clamp(24px,3vw,34px)/1.2 var(--display)";
   words.append(kicker, h, el("p", null, `${strikes} of 3 strikes${outcome === "failed_autofail" ? " · red card" : ""}. Nothing from this call was saved.`));
   head.append(ring, words);
   host.append(head);
@@ -138,7 +136,6 @@ export function renderReport(host, result, opts = {}) {
   const row = el("div", "btnrow");
   const again = el("a", "go ghost", "Try another drill");
   again.href = "/";
-  again.style.cssText = "display:inline-flex;align-items:center;justify-content:center;text-decoration:none";
   if (opts.onAgain) {
     again.addEventListener("click", (ev) => {
       ev.preventDefault();

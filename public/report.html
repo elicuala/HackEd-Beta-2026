@@ -1,23 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Your report card · Scam Drill</title>
-<link rel="stylesheet" href="/css/desk.css">
+<script>(()=>{try{const t=localStorage.getItem("scamDrill.theme")||"auto",s=Number(localStorage.getItem("scamDrill.textSize"))||1;document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.style.setProperty("--scale",s)}catch(e){}})()</script>
+<link rel="preload" href="/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<div class="aurora" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to content</a>
+<div class="aurora" aria-hidden="true"><i></i><i></i></div>
+<div class="grain" aria-hidden="true"></div>
 <div class="page">
-<header class="nav"><div class="wrap">
-  <span class="brand"><i aria-hidden="true"></i>SCAM DRILL</span>
-  <nav aria-label="Main">
-    <a href="/">Drill</a>
-    <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live board</a>
-    <a href="/phone.html">Phone drill</a>
-  </nav>
+<header class="nav wrap"><div class="nav-bar refract">
+  <a class="brand" href="/"><i aria-hidden="true"></i>SCAM DRILL</a>
+  <div class="nav-right">
+    <nav aria-label="Main">
+      <a href="/">Drill</a>
+      <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live board</a>
+      <a href="/phone.html">Phone</a>
+    </nav>
+    <div class="tools"></div>
+  </div>
 </div></header>
-<main class="wrap" style="padding-top:32px">
+<main class="wrap" id="main" style="padding-top:32px">
   <section id="report" class="report" aria-live="polite"></section>
   <section id="empty" class="glass declined" hidden>
     <h1 style="font:700 28px/1.2 var(--display);margin:0">No drill yet</h1>
@@ -27,6 +35,7 @@
 </main>
 <footer><div class="wrap">Nothing from your drill was recorded or stored. This report lives only in this browser tab.</div></footer>
 </div>
+<script type="module" src="/js/ui/prefs.js"></script>
 <script type="module" src="/js/report.js"></script>
 </body>
 </html>
