@@ -134,6 +134,7 @@ test("judge (API path, faked): sends a strict schema, the model, a timeout, and 
   assert.equal(body.model, "test-model");
   assert.equal(body.instructions, SYSTEM_PROMPT);
   assert.equal(body.text.format, VERDICT_FORMAT);
+  assert.deepEqual(body.reasoning, { effort: "none" });
   assert.deepEqual(options, { timeout: JUDGE_TIMEOUT_MS, maxRetries: 0 });
   assert.equal(JUDGE_TIMEOUT_MS, 4000);
 });
@@ -183,4 +184,24 @@ test("judge: a quote taken from the scrubbed line is accepted", async () => {
     real(api),
   );
   assert.equal(events[0]?.quote, "It's ••••");
+});
+
+// Keep this test last: after it, the module stops sending the reasoning option.
+test("judge (API path, faked): a model that rejects the reasoning option is asked again without it", async () => {
+  const calls = [];
+  const api = {
+    responses: {
+      create: async (body) => {
+        calls.push(body);
+        if (body.reasoning) throw Object.assign(new Error("Unsupported parameter: 'reasoning.effort'"), { status: 400 });
+        return { output_text: JSON.stringify({ verdict: "good_defense", tactic: "verification", quote: "prove it", reason: "r", confidence: 0.9 }) };
+      },
+    },
+  };
+  const turns = [scammer("This is Officer Grant."), victim("Then prove it.")];
+  assert.equal((await judgeTurn({ recentTurns: turns, scenario }, real(api))).length, 1);
+  assert.equal(calls.length, 2);
+  assert.equal((await judgeTurn({ recentTurns: turns, scenario }, real(api))).length, 1);
+  assert.equal(calls.length, 3);
+  assert.equal("reasoning" in calls[2], false);
 });

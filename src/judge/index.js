@@ -20,17 +20,28 @@ export function usesMock(env = process.env) {
   return env.JUDGE_MOCK === "1" || !env.OPENAI_API_KEY || !env.JUDGE_MODEL;
 }
 
+// Thinking time is the judge's biggest latency cost, and this call doesn't need it.
+// Not every model accepts the option, so we stop sending it the first time one says no.
+let reasoningOff = true;
+
 /** Ask the model for a verdict. May throw (timeout, network, bad JSON). The caller catches. */
 export async function askModel(input, { api = getClient(), model = process.env.JUDGE_MODEL } = {}) {
-  const response = await api.responses.create(
-    {
-      model,
-      instructions: SYSTEM_PROMPT,
-      input: buildInput(input),
-      text: { format: VERDICT_FORMAT },
-    },
-    { timeout: JUDGE_TIMEOUT_MS, maxRetries: 0 },
-  );
+  const body = {
+    model,
+    instructions: SYSTEM_PROMPT,
+    input: buildInput(input),
+    text: { format: VERDICT_FORMAT },
+  };
+  const options = { timeout: JUDGE_TIMEOUT_MS, maxRetries: 0 };
+  let response;
+  try {
+    response = await api.responses.create(reasoningOff ? { ...body, reasoning: { effort: "none" } } : body, options);
+  } catch (err) {
+    const rejectedOption = reasoningOff && err?.status === 400 && /reasoning/i.test(String(err?.message));
+    if (!rejectedOption) throw err;
+    reasoningOff = false;
+    response = await api.responses.create(body, options);
+  }
   return JSON.parse(response.output_text);
 }
 

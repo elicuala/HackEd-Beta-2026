@@ -7,8 +7,7 @@ Why: `checkRules` is never told the time, so every rules event reaches the front
 Affects: foundation (one line). Frontend benefits; no other role has to change. `checkRules` already accepts an optional `t`, so the first form works the moment it is merged.
 
 ## Status
-Scenarios, rules engine, ref lines, and AI judge are built and tested on `role/logic`.
-One checklist item is **not done**: the live judge eval (`node src/judge/eval.js`) has not been run, because this laptop has no `.env` (no `OPENAI_API_KEY` or `JUDGE_MODEL`). The real-API path is covered only by tests with a faked client.
+Scenarios, rules engine, ref lines, and AI judge are built and tested on `role/logic`. Every acceptance item is done, including the live judge eval.
 
 ## What I built
 - **Scenarios** (`src/scenarios/`): `cra`, `grandkid`, `bank_fraud`. Each prompt has the seven required parts in order, with the guardrail, back-off, stop-word, and unmask sentences verbatim.
@@ -38,9 +37,34 @@ Signatures are unchanged from the stubs (SPEC §5.3).
 - [x] `npm run simulate` gives `failed_autofail` on the fail fixture and `passed` on the pass fixture (output below)
 - [x] Every ref phrase is covered, digit-free, and within its word limit, every sound is from the allowed set, and each scenario has an unmask "trick" line (tested in `src/ref/ref.test.js`)
 - [x] The 3 unmask lines are pasted below
-- [ ] `node src/judge/eval.js`: **not run** (no API key on this laptop). The mock agrees with 15/15 cases, which says nothing about the real model.
+- [x] `node src/judge/eval.js`: 14/15 match, average latency 1732 ms (output below)
 - [x] Each scenario's `opening_line` and `escalation` are pasted below
-- [x] `npm test` (70 tests, 16 foundation plus 54 logic) and `npm run check-ownership -- logic` pass
+- [x] `npm test` (71 tests, 16 foundation plus 55 logic) and `npm run check-ownership -- logic` pass
+
+### `node src/judge/eval.js` (real API, model from `JUDGE_MODEL`)
+```
+PASS  hooked-fear              expected warning      got warning      fear 97%           1856 ms
+PASS  hooked-pay-now           expected strike       got strike       payment 99%        1862 ms
+FAIL  hooked-sympathy          expected warning      got none                            1901 ms
+PASS  hooked-authority         expected warning      got warning      authority 96%      2293 ms
+PASS  hooked-urgency           expected warning      got warning      urgency 99%        1634 ms
+PASS  skeptical-employee-id    expected good_defense got good_defense verification 98%   2188 ms
+PASS  skeptical-call-back      expected good_defense got good_defense verification 100%  2394 ms
+PASS  skeptical-prove-it       expected good_defense got good_defense verification 99%   1658 ms
+PASS  skeptical-back-of-card   expected good_defense got good_defense verification 100%  1387 ms
+PASS  skeptical-names-it       expected good_defense got good_defense payment 99%        1431 ms
+PASS  neutral-greeting         expected none         got none                            1572 ms
+PASS  neutral-repeat           expected none         got none                            1537 ms
+PASS  neutral-tv               expected none         got none                            1319 ms
+PASS  neutral-lunch            expected none         got none                            1382 ms
+PASS  neutral-hearing          expected none         got none                            1564 ms
+
+Match (expected or an accepted neighbour): 14/15   target: at least 12
+Exact match:                               14/15
+Errors or timeouts:                        0
+Average latency:                           1732 ms   target: under 2000 ms
+```
+The first run, with the model's default reasoning, also scored 14/15 but averaged 2169 ms. The judge now sends `reasoning: { effort: "none" }` and drops the option automatically for a model that rejects it.
 
 ### `npm run simulate -- test/fixtures/transcript-cra-fail.json`
 ```
@@ -108,8 +132,8 @@ Opening: "Hello, this is Alex from the fraud department at your bank. We've noti
 5. Say you are texting them a verification code, and ask them to read the code back to you.
 
 ## Known issues
-- **Judge eval not run** (see Status). When a key is available: fill in `.env`, run `node src/judge/eval.js`, and paste the output here. Targets: at least 12/15 and under 2 s average. Hooked cases accept either `warning` or `strike`; the script prints both the lenient and the exact count.
-- **Judge latency is unmeasured.** If `JUDGE_MODEL` is a reasoning model, it may be slow. The call sets no reasoning or token options, because those differ between model families; pick a small, fast model first and tune `askModel` in `src/judge/index.js` if the eval shows it is needed.
+- **Judge latency is close to the target** (1.7 s average, single calls up to 2.4 s, one run of 15 calls). The judge runs after the rules, so strikes from the rules are not delayed by it, but AI warnings and credits arrive about 2 s after the line.
+- **The judge is cautious about sympathy.** It gave `none` for "Oh sweetie, are you okay? Tell me what you need." in the grandchild scenario, where the case expects a warning.
 - **Rule events have `t: 0`** until the change request above is merged.
 - **Agreement is keyword-based.** A bare "okay" right after the scammer asks for gift cards, a transfer, or a download counts as agreeing and is a red card. Sceptical questions ("Okay, but why gift cards?") and any refusal word do not. Expect the odd false red card on filler "okay"s in a live call.
 - **`lingered` will fire in most long calls**: any victim line more than 45 s after the first red-flag phrase is a strike. In the demo script this could land as an extra strike before the card-number moment if the call runs long. Rehearse the timing, or raise `LINGER_SECONDS` in `src/rules/strikes.js`.
