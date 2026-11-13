@@ -1,0 +1,145 @@
+<title>Scam Drill · Switchboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Lexend:wght@400;600&display=swap">
+<style>
+/* Layout: a vintage telephone exchange. Lamp sockets for strikes, brass plates for labels, an oxblood bakelite call panel. */
+:root{
+  --sage:#E4EAE2; --panel:#F6F8F4; --ink:#1F2621; --muted:#4F5A52; --line:#C6D0C4;
+  --bakelite:#6E2130; --brass:#A9822F; --lamp:#E4572E; --ok:#2E7A55; --plate:#EBDDB5;
+  --display:"Zilla Slab",Rockwell,Georgia,serif; --body:"Lexend",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sage:#161B18; --panel:#1F2621; --ink:#E9EEE8; --muted:#A7B2A9; --line:#334036;
+  --bakelite:#8E3445; --brass:#D2AA55; --ok:#5CC08E; --plate:#3B3424; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --sage:#161B18; --panel:#1F2621; --ink:#E9EEE8; --muted:#A7B2A9; --line:#334036;
+  --bakelite:#8E3445; --brass:#D2AA55; --ok:#5CC08E; --plate:#3B3424; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--sage);color:var(--ink);font:18px/1.65 var(--body)}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-block:20px;border-bottom:2px solid var(--line)}
+.logo{font:700 28px/1 var(--display);display:flex;gap:12px;align-items:center}
+.jack{width:22px;height:22px;border-radius:50%;background:var(--ink);box-shadow:inset 0 0 0 6px var(--brass)}
+nav{display:flex;gap:22px}nav a{color:var(--ink)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
+.hero{padding-block:56px 40px;display:grid;grid-template-columns:1.25fr 1fr;gap:44px;align-items:center}
+.plate{display:inline-block;background:var(--plate);color:var(--ink);font:600 14px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;padding:8px 12px;border:1px solid var(--brass);border-radius:3px}
+h1{font:700 clamp(40px,6vw,64px)/1.05 var(--display);margin:18px 0;text-wrap:balance}
+h1 span{color:var(--bakelite)}
+.lede{font-size:20px;color:var(--muted);max-width:38ch;margin:0 0 26px}
+.btn{display:inline-flex;align-items:center;min-height:56px;padding:0 28px;border-radius:999px;font:600 20px/1 var(--body);background:var(--bakelite);color:#FFF6EE;border:0;text-decoration:none;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.small{font-size:16px;color:var(--muted)}
+.exchange{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:22px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;position:relative}
+.sock{aspect-ratio:1;border-radius:50%;background:var(--ink);box-shadow:inset 0 0 0 9px var(--brass);max-width:100%}
+.sock.lit{background:var(--lamp);box-shadow:inset 0 0 0 9px var(--brass),0 0 18px var(--lamp)}
+.exchange svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+h2{font:700 38px/1.1 var(--display);margin:0 0 22px}
+section{padding-block:36px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;list-style:none;padding:0;margin:0}
+.steps li{display:grid;gap:8px}
+.steps .plate{justify-self:start}
+.steps b{font:700 24px/1.2 var(--display)}
+.steps p{margin:0;color:var(--muted)}
+.call{background:var(--bakelite);color:#FFF6EE;border-radius:22px;padding:30px;display:grid;grid-template-columns:1fr 1.1fr;gap:28px}
+.call .plate{background:#F3E6C4;color:#2A1E14}
+.who{font:700 38px/1.1 var(--display);margin:12px 0 4px}
+.timer{font:500 20px/1 var(--body);font-variant-numeric:tabular-nums;opacity:.85}
+.lamps{display:flex;gap:16px;margin:24px 0 8px}
+.lamp{width:62px;height:62px;border-radius:50%;background:#3A1219;box-shadow:inset 0 0 0 8px var(--brass);display:grid;place-items:center;font:700 20px/1 var(--display);color:#C79AA3}
+.lamp.on{background:#FFB23E;color:#3A1219;box-shadow:inset 0 0 0 8px var(--brass),0 0 22px #FFB23E}
+.call .btn{background:#FFF6EE;color:var(--bakelite);margin-top:16px}
+.ticket{background:#FFF6EE;color:#2A1E14;border-radius:10px;padding:16px 18px;display:grid;gap:12px}
+.ticket h3{margin:0;font:700 20px/1 var(--display)}
+.row{display:grid;grid-template-columns:52px 1fr;gap:10px;padding-top:10px;border-top:1px dashed #C9B48A}
+.row time{font-variant-numeric:tabular-nums;color:#6A5A44}
+.pill{display:inline-block;font:600 13px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:4px;margin-right:6px}
+.pill.s{background:#6E2130;color:#fff}.pill.w{background:#E9C46A;color:#2A1E14}.pill.g{background:#2E7A55;color:#fff}
+details{grid-column:1/-1;background:#4E1622;border-radius:10px;padding:14px 18px}
+summary{font:700 20px/1 var(--display);cursor:pointer;min-height:44px;display:flex;align-items:center}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:15px/1.4 ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #6E2A37}th{opacity:.7;font-weight:400}
+.report{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:30px;display:grid;gap:18px}
+.report h3{font:700 32px/1.15 var(--display);margin:0;text-wrap:balance}
+.score{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.score .lamp{width:40px;height:40px;font-size:15px}
+.habit{background:var(--plate);border-left:6px solid var(--brass);padding:16px 18px;border-radius:0 8px 8px 0}
+.habit b{display:block;font:700 20px/1.2 var(--display);margin-bottom:4px}
+footer{padding-block:30px;color:var(--muted);font-size:16px}
+@media (max-width:760px){.hero,.call{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.exchange{display:none}}
+</style>
+
+<header><div class="wrap">
+  <div class="logo"><span class="jack" aria-hidden="true"></span>Scam Drill</div>
+  <nav aria-label="Main"><a href="#how">How it works</a><a href="#report">Report card</a></nav>
+</div></header>
+<main>
+<div class="wrap hero">
+  <div>
+    <span class="plate">Practice line · Open</span>
+    <h1>Scammers practice on your grandparents every day. <span>We let them practice back.</span></h1>
+    <p class="lede">Pick up a pretend scam call. When something risky slips out, a lamp lights. When it's over, the caller tells you the trick.</p>
+    <div class="ctas"><a class="btn" href="#live">Start a practice drill</a><a class="btn alt" href="#how">Phone drill</a></div>
+    <p class="small">Drills are practice. Nothing you say is saved.</p>
+  </div>
+  <div class="exchange" aria-hidden="true">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M18 30 C 30 80, 60 80, 82 50" stroke="#6E2130" stroke-width="1.6" fill="none"/><path d="M38 70 C 50 30, 70 20, 62 90" stroke="#A9822F" stroke-width="1.6" fill="none"/></svg>
+    <i class="sock"></i><i class="sock"></i><i class="sock lit"></i><i class="sock"></i><i class="sock"></i>
+    <i class="sock"></i><i class="sock lit"></i><i class="sock"></i><i class="sock"></i><i class="sock"></i>
+    <i class="sock"></i><i class="sock"></i><i class="sock"></i><i class="sock"></i><i class="sock lit"></i>
+  </div>
+</div>
+
+<section id="how"><div class="wrap">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><span class="plate">Line 1</span><b>The phone rings</b><p>An unknown caller with a familiar story. You decide whether to answer.</p></li>
+    <li><span class="plate">Line 2</span><b>The ref listens in</b><p>Risky answers light a lamp. Three lamps and the call is over.</p></li>
+    <li><span class="plate">Line 3</span><b>The caller confesses</b><p>The same voice drops the act and explains the trick it used.</p></li>
+  </ol>
+</div></section>
+
+<section id="live"><div class="wrap">
+  <h2>On the line</h2>
+  <div class="call">
+    <div>
+      <span class="plate">Unknown caller</span>
+      <div class="who">Tax agency call</div>
+      <div class="timer">On the call · 0:24</div>
+      <div class="lamps" aria-live="assertive" aria-label="2 of 3 strikes"><div class="lamp on">1</div><div class="lamp on">2</div><div class="lamp">3</div></div>
+      <div>2 of 3 strikes</div>
+      <button class="btn" type="button">End drill</button>
+      <p>Say "stop" anytime to end.</p>
+    </div>
+    <div class="ticket" aria-live="polite">
+      <h3>Ref's log</h3>
+      <div class="row"><time>0:14</time><div><span class="pill s">Strike</span><b>Named your bank</b><br><q>I'm with TD.</q></div></div>
+      <div class="row"><time>0:10</time><div><span class="pill w">Warning</span><b>Sounded rushed</b><br><q>I guess I should pay it today then.</q></div></div>
+      <div class="row"><time>0:06</time><div><span class="pill w">Warning</span><b>Sounded scared</b><br><q>Oh no, really? What do I owe?</q></div></div>
+    </div>
+    <details open><summary>Ref's view</summary><div class="tbl"><table>
+      <thead><tr><th>t</th><th>tier</th><th>type</th><th>source</th><th>conf</th><th>note</th></tr></thead>
+      <tbody><tr><td>0:06</td><td>warning</td><td>fear</td><td>AI judge</td><td>70%</td><td></td></tr>
+      <tr><td>0:10</td><td>warning</td><td>urgency</td><td>AI judge</td><td>60%</td><td>downgraded · low confidence</td></tr>
+      <tr><td>0:14</td><td>strike</td><td>confirmed_bank</td><td>Rules</td><td>100%</td><td></td></tr></tbody></table></div></details>
+  </div>
+</div></section>
+
+<section id="report"><div class="wrap">
+  <h2>Report card</h2>
+  <article class="report">
+    <span class="plate">Tax agency call · Practice again</span>
+    <h3>Not this time, and that's exactly what practice is for.</h3>
+    <div class="score"><div class="lamp on">1</div><div class="lamp on">2</div><div class="lamp on">3</div><span>3 of 3 strikes</span></div>
+    <div class="ticket">
+      <div class="row"><time>0:06</time><div><span class="pill w">Warning</span><q>Oh no, really? What do I owe?</q></div></div>
+      <div class="row"><time>0:14</time><div><span class="pill s">Strike</span><q>I'm with TD.</q></div></div>
+      <div class="row"><time>0:24</time><div><span class="pill s">Strike</span><q>Okay, I won't tell anyone.</q></div></div>
+    </div>
+    <div class="habit"><b>One habit to keep</b>When in doubt, hang up and call the number on the back of your card.</div>
+  </article>
+</div></section>
+</main>
+<footer><div class="wrap">Concept 2 of 5 · Switchboard: an old telephone exchange, warm and familiar.</div></footer>
