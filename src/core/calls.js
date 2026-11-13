@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createCallState, endCall as endState } from "./callState.js";
 import { onTurn } from "./pipeline.js";
 import { publish } from "./bus.js";
+import { sanitizeScript } from "../shared/contract.js";
 import { checkRules } from "../rules/index.js";
 import { judgeTurn } from "../judge/index.js";
 import { getScenario } from "../scenarios/index.js";
@@ -22,19 +23,21 @@ function notFound() {
 
 function safeScript(action) {
   try {
-    return scriptFor(action) ?? { say: null, sound: null };
+    return sanitizeScript(scriptFor(action));
   } catch {
     return { say: null, sound: null };
   }
 }
 
 function decorate(entry, action) {
-  const wire = { ...action, callId: entry.state.callId, ref: safeScript(action) };
+  const wire = { ...action, callId: entry.state.callId };
   if (action.type === "reveal") {
     wire.scenarioId = entry.scenario.id;
     wire.scenarioTitle = entry.scenario.title;
     wire.endedAt = new Date().toISOString();
   }
+  // scriptFor sees the full action (including scenarioId on reveal) so the unmask can fit the scenario.
+  wire.ref = safeScript(wire);
   return wire;
 }
 

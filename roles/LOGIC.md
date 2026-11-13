@@ -6,6 +6,8 @@
 ## Mission
 The brain of the ref and the script of the scammer. Everything you build is pure logic or text with tests. No servers, no UI, no audio.
 
+**Why it matters for judging (SPEC §0):** the two-layer ref (rules plus AI judge) is our **Complexity** story, realistic Canadian scam scripts are our **Utility** story, and the unmask line is the **Originality** moment the whole demo builds to.
+
 ## You own
 - `src/rules/**`
 - `src/judge/**`
@@ -41,6 +43,7 @@ Every `system_prompt` must contain, in this order:
 4. Guardrails (verbatim): "Never use slurs, sexual content, or threats of physical violence. Never name a real bank or real person; say 'your bank' instead. Never ask for anything beyond your goal."
 5. Back-off: "If the person refuses and says they will verify independently, push back once, then say goodbye and stop."
 6. Stop word (verbatim): "If the person says 'drill' or 'stop', stop immediately and say nothing else."
+7. Unmask (verbatim): "When you are told the drill is over, step out of character and say exactly the line you are given, kindly, and nothing else."
 
 `red_flag_phrases`: 4–8 lowercase phrases per scenario that the scammer will actually say (they start the lingering timer).
 
@@ -80,12 +83,16 @@ Normalizer: "four five one two" → "4512", "oh" and "zero" → 0, "double five"
 ## 3. Ref lines: `src/ref/`
 `scriptFor(action) → { say, sound }` with all text in `src/ref/phrases.js`.
 **Persona:** a warm, steady sports referee (SPEC §0.2 Originality). Lines can borrow light ref language ("That's a strike," "Clean play," "Red card on that one") but stay kind and plain. The reveal is the emotional high point of the demo, so write it to land.
-- `strike_called` → sound `"buzzer"`, say: `"Strike {n}. {what happened}. {why scammers want it}."` For example: "Strike one. You told them your bank. Scammers use that to sound legit."
+You also pick the **sound** (SPEC §0.4). It must be one of `"whistle" | "red_card" | "chime" | "fanfare" | null`; the core turns anything else into `null`.
+- `strike_called` → sound `"whistle"`, say: `"Strike {n}. {what happened}. {why scammers want it}."` For example: "Strike one. You told them your bank. Scammers use that to sound legit." This is spoken by the browser's ref voice (or "Referee:" on the phone).
 - `warning_shown` → `{ say: null, sound: null }`
 - `credit_shown` → `{ say: null, sound: "chime" }`
-- `reveal` → sound `"chime"`, say: "This was a Scam Drill. You're safe, and nothing you said was saved." + one line about the top tactic for `failed_*`, or a congratulation for `passed` + "Remember: hang up and call the official number yourself."
+- `reveal` → **the unmask.** This line is spoken **by the scammer's own voice dropping the act** (SPEC §1, §5.7), so write it in the first person, as the same character stepping out of the role. The action includes `outcome`, `events`, and `scenarioId`, so tailor it to them:
+  - sound: `failed_autofail` → `"red_card"`, `failed_strikes` → `"chime"`, `passed` → `"fanfare"`
+  - say, `failed_*`: "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved." + **the trick I used on you** (from the scenario and the top event type, for example "I said a warrant was coming today so you'd panic and pay fast.") + "Next time, hang up and call the official number yourself."
+  - say, `passed`: "Okay, I'll drop the act. This was a Scam Drill, and you beat me." + what they did right (from the `good_defense` events, or a general line) + "Hanging up and calling the official number is exactly right."
 
-Every strike and autofail `type` from the rules engine, and every `tactic` from the judge, needs a phrase. Unknown types get a generic phrase. Under 30 words per `say`, no digits, kind, never shaming. Tests: coverage of every type, no digits, each outcome.
+Every strike and autofail `type` from the rules engine, and every `tactic` from the judge, needs a phrase, and every scenario needs an unmask "trick" line. Unknown types and scenarios get a generic phrase. Under 30 words per strike `say` and **under 50 words for a reveal `say`**, no digits, kind, never shaming. Tests: coverage of every type and scenario, no digits, a valid sound for each action and outcome, and word limits.
 
 ## 4. AI judge: `src/judge/`
 ```js
@@ -101,10 +108,11 @@ judgeTurn({ recentTurns, scenario }) → Promise<RefEvent[]>   // never throws, 
 `src/judge/cases.json`: 15 victim lines with expected verdicts (5 hooked, 5 skeptical, 5 neutral). `src/judge/eval.js` (run manually, not in `npm test`): runs the cases against the real API and prints the agreement and average latency.
 
 ## Acceptance checklist (paste results into `handoff/logic.md`)
-- [ ] `listScenarios()` returns 3 scenarios, and every prompt contains the verbatim guardrail and stop-word sentences (tested)
+- [ ] `listScenarios()` returns 3 scenarios, and every prompt contains the verbatim guardrail, stop-word, and unmask sentences (tested)
 - [ ] All rules tests pass, including the guards and the performance test
 - [ ] `npm run simulate` gives `failed_autofail` on the fail fixture and `passed` on the pass fixture (paste the output)
-- [ ] Every ref phrase is covered, digit-free, and under 30 words (tested)
+- [ ] Every ref phrase is covered, digit-free, and within its word limit, every sound is from the allowed set, and each scenario has an unmask "trick" line (tested)
+- [ ] Paste the 3 unmask lines (one per outcome, CRA) into the handoff so the humans can check how they sound
 - [ ] `node src/judge/eval.js`: ≥ 12/15 match, average latency < 2 s (paste the output)
 - [ ] Paste each scenario's `opening_line` and `escalation` into the handoff so the humans can check the tone
 - [ ] `npm test` and `npm run check-ownership -- logic` pass

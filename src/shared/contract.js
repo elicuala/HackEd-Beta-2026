@@ -6,6 +6,10 @@ export const STATUSES = ["live", "reveal"];
 export const OUTCOMES = ["passed", "failed_strikes", "failed_autofail"];
 export const SPEAKERS = ["victim", "scammer"];
 export const ACTION_TYPES = ["strike_called", "warning_shown", "credit_shown", "reveal"];
+/** The ref's sound identity (SPEC §0.4). Browser: synthesized by Agent F. Phone: tones by Agent B. */
+export const SOUNDS = ["whistle", "red_card", "chime", "fanfare"];
+/** Why the core turned a strike into a warning. Set on RefEvent.downgraded (SPEC §5.2). */
+export const DOWNGRADE_REASONS = ["low_confidence", "repeat_type"];
 
 export const MAX_STRIKES = 3;
 export const AI_STRIKE_MIN_CONFIDENCE = 0.8;
@@ -14,8 +18,9 @@ export const STOP_PHRASES = ["drill", "stop"];
 /**
  * @typedef {{ speaker: "victim"|"scammer", text: string, t: number }} Turn
  * @typedef {{ tier: "autofail"|"strike"|"warning"|"good_defense", type: string, quote: string,
- *             source: "rules"|"ai", confidence: number, t: number }} RefEvent
- * @typedef {{ say: string|null, sound: "buzzer"|"chime"|null }} RefScript
+ *             source: "rules"|"ai", confidence: number, t: number,
+ *             downgraded?: "low_confidence"|"repeat_type" }} RefEvent
+ * @typedef {{ say: string|null, sound: "whistle"|"red_card"|"chime"|"fanfare"|null }} RefScript
  * @typedef {{ type: "strike_called"|"warning_shown"|"credit_shown"|"reveal", callId: string,
  *             ref: RefScript, event?: RefEvent, strikeNumber?: number,
  *             outcome?: "passed"|"failed_strikes"|"failed_autofail", events?: RefEvent[],
@@ -52,7 +57,16 @@ export function validateEvent(e) {
     errors.push("confidence must be 0..1");
   if (e.source === "ai" && e.tier === "autofail") errors.push("ai cannot autofail");
   if (typeof e.t !== "number") errors.push("missing t");
+  if ("downgraded" in e && !DOWNGRADE_REASONS.includes(e.downgraded))
+    errors.push(`bad downgraded: ${e.downgraded}`);
   return { ok: errors.length === 0, errors };
+}
+
+/** Coerce anything into a safe RefScript: unknown sounds become null, digits are redacted. */
+export function sanitizeScript(script) {
+  const say = typeof script?.say === "string" && script.say.trim() ? redact(script.say) : null;
+  const sound = SOUNDS.includes(script?.sound) ? script.sound : null;
+  return { say, sound };
 }
 
 /** Returns { ok: boolean, errors: string[] }. */

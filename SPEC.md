@@ -4,7 +4,14 @@
 
 > "Scammers practice on your grandparents every day. We let them practice back."
 
-**What changed in 1.1:** added §0 (how we win), the music and visual-design work in `roles/FRONTEND.md`, and demo and Devpost gates in §7. **No API, data type, or module interface in §5 changed.** The only §5 addition is one frontend-only storage key (§5.8). Everything new is additive and lives inside one role's paths.
+**What changed in 1.1** (made before any role work started, so nobody has to rework anything):
+- **New §0 (how we win):** prize targets, a judging map, the Ref's view, the music plan, and the demo script. Also new: §10 (Devpost) and judging gates in §7.
+- **The unmask (§1, §5.7):** the reveal is now spoken **in the scammer's own voice**, as it drops the act. `VoiceClient` gains `unmask(text)` and a `"scammer_speaking"` status.
+- **Sound identity (§5.1):** `RefScript.sound` is now `"whistle" | "red_card" | "chime" | "fanfare" | null` (it was `"buzzer" | "chime"`). Agent L's ref picks the sound, the browser and the phone both play it, and the core drops any unknown sound.
+- **Downgrade reasons (§5.1, §5.2):** when the core turns a strike into a warning, it now tags the event with `downgraded`, so the Ref's view can show why.
+- **Decline (§1):** answering is now part of the drill. Declining the call is celebrated on the drill page, with no report card.
+- **Storage:** a frontend-only `scamDrill.music` key (§5.8).
+- The foundation code, fixtures, and tests are already updated (`npm test` passes 16 tests).
 
 ## 0. How we win (read this before building anything)
 
@@ -26,35 +33,37 @@
 | **Execution** | The live demo works the first time, with no dead air | Mock fallback (`?mock=1`) one keypress away, a backup video, 3 rehearsals, voice latency ≤ 1.5 s, every error state friendly | All |
 | **Complexity** | Judges can *see* that it's hard | Realtime voice over WebRTC, a **two-layer ref** (deterministic rules plus an LLM judge with confidence gating), a spoken-number normalizer, live SSE, and a real phone call (stretch). Shown in the **Ref's view** panel (§0.3) and an architecture diagram on Devpost | L and B build it, F shows it |
 | **Polish** | It feels like a shipped product, not a hackathon page | A design system, purposeful motion, sound design, a printable report card, no console errors | F (with L's ref lines) |
-| **Originality** | "I haven't seen that before" | The **reveal**: the scammer drops the act mid-call and coaches you. AI voice cloning is turned from the threat into the vaccine. The ref is a sports official with whistles, strikes, and a red card | All |
+| **Originality** | "I haven't seen that before" | The **unmask**: the scammer's own voice drops the act mid-call and coaches you on the trick it just used. Realistic AI phone voices are turned from the threat into the vaccine. The ref is a sports official with a whistle, strikes, and a red card | All (B voices the unmask, L writes it) |
 | **Utility** | A real person would use it tomorrow | Seniors-first accessibility (WCAG 2.2 AA), Canadian scam scripts based on CAFC and CRA guidance, one takeaway habit per drill, and nothing is saved | L (content), F (accessibility) |
 
 ### 0.3 Make the complexity visible: the Ref's view
-Judges score what they can see. The live drill page has a collapsible **"Ref's view"** panel (open by default during the demo, closed for real users). It shows each `RefEvent` as it arrives with its tier, `type`, redacted quote, **source** ("Rules" or "AI judge") and **confidence** (for example "AI judge · 86%"), plus a note whenever the core downgraded an AI strike to a warning. All of this is already in `RefEvent` (§5.1), so it needs no contract change.
+Judges score what they can see. The live drill page has a collapsible **"Ref's view"** panel (open by default during the demo, closed for real users). It shows each `RefEvent` as it arrives with its tier, `type`, redacted quote, **source** ("Rules" or "AI judge") and **confidence** (for example "AI judge · 86%"), plus the reason whenever the core downgraded a strike: `downgraded: "low_confidence"` ("AI wasn't sure enough to call a strike") or `"repeat_type"` ("already called"). All of this comes from `RefEvent` (§5.1).
 
 ### 0.4 Music and sound (Best Inclusion of Music)
-All of it is built by Agent F with the Web Audio API: no audio files are required, there are no new dependencies, and it's driven only by the `WireAction`s the page already receives. Details are in `roles/FRONTEND.md`.
-- **Adaptive tension score:** a quiet generative soundtrack during the live drill that gains a layer with each strike (a pulse, a faster tempo, then a minor drone), lifts on `good_defense`, ducks while the scammer or ref speaks, and stops dead at the reveal.
-- **The ref's sound identity:** whistle-style buzzer for strikes, a "red card" sting for autofails, a two-note chime for credit, and a short victory fanfare for `passed`. These are mapped on the client from `ref.sound` plus the action's `type`/`outcome`.
+In the browser, all of it is built by Agent F with the Web Audio API: no audio files are required, there are no new dependencies, and it's driven by the `WireAction`s and voice-client statuses the page already receives. Details are in `roles/FRONTEND.md`.
+- **Adaptive tension score:** a quiet generative soundtrack during the live drill that gains a layer with each strike (a pulse, a faster tempo, then a minor drone), lifts on `good_defense`, ducks while the scammer speaks (`"scammer_speaking"`) or the ref speaks, and stops dead at the reveal.
+- **The ref's sound identity (`RefScript.sound`, chosen by Agent L's ref):** a referee `whistle` for strikes, a `red_card` sting for autofails, a two-note `chime` for credit and for a three-strike reveal, and a short victory `fanfare` for `passed`. Agent F synthesizes these in the browser, and Agent B plays simple tone versions of them on the phone.
 - **Visualized:** a live visualizer of the score on the call screen, and a **"Replay your drill"** button on the report card that plays the timeline back as a 10-second melody (defenses rise, strikes fall) while each event card lights up in turn.
 - A clear **Music on/off** toggle that is remembered per browser.
 
 ### 0.5 The 3-minute demo (rehearse this exact script)
 Use a **speaker, not headphones**, so judges hear the scammer, the ref, and the music. Test speaker mode at sync 2 (echo can leak into the mic). If it's bad, the "grandparent" wears a headset mic while the output goes to the speaker.
 1. **Hook (15 s):** the tagline, plus the latest Canadian Anti-Fraud Centre reported-loss figure (look it up and cite it on Devpost, don't guess).
-2. **Live drill (90 s):** a teammate plays a grandparent on the CRA scenario. The incoming-call screen rings and they answer. They name their bank, the whistle blows, strike 1 lights up, and the score tightens. Then they read out a fake card number: red card, the music cuts, and the scammer drops the act and explains the trick.
+2. **Live drill (90 s):** a teammate plays a grandparent on the CRA scenario. The incoming-call screen rings and they answer. They name their bank, the whistle blows, strike 1 lights up, and the score tightens. Then they read out a fake card number: red card, the music cuts, and **the same scammer voice drops the act** ("This was a Scam Drill…") and explains the trick it used.
 3. **Report card (30 s):** the timeline, "What you did well", the takeaway, and **Replay your drill** playing the call back as music.
 4. **Under the hood (30 s):** open the Ref's view (rules vs AI judge, confidence), show the architecture slide, and if the stretch works, ring a teammate's phone live.
 5. **Close (15 s):** "Nothing is recorded. Five minutes of practice beats a lifetime of savings."
 
-**Product goal (must work):** a browser drill with live strikes, the ref's buzzer and voice, a reveal, and a report card. **Demo goal:** the §0.5 script runs clean twice in a row.
+**Demo goal:** the §0.5 script runs clean twice in a row.
 
 ## 1. Product
 
-Scam Drill is a fire drill for phone scams. A person who opted in talks to an AI scammer, in the browser or on a real phone call. A ref scores the call live in three tiers. When the drill ends, the AI drops the act and explains the tactic that almost worked, then the person gets a report card.
+Scam Drill is a fire drill for phone scams. A person who opted in gets a call from an AI scammer, in the browser or on a real phone. A ref (a calm sports official) scores the call live in three tiers: warnings, strikes, and a red card. When the drill ends, **the scammer's own voice drops the act** and explains the tactic that almost worked (the unmask). Then the person gets a report card with one habit to keep, and can replay their drill as music.
 
-**Must work:** a browser drill with live strikes, the ref's buzzer and voice, a reveal, and a report card.
-**Polish (after sync 2, Agent F):** the visual design system, the incoming-call screen, motion, the Ref's view, and the music from §0.4.
+The drill flow is **incoming call (Answer or Decline) → live call → unmask → report card**. Declining an unknown caller is the safest move there is, so Decline gets celebrated on the drill page ("Not answering unknown numbers is a great habit") with an "Answer this time" button to practise anyway. No call is created, so there's no report card.
+
+**Must work:** a browser drill with live strikes, the ref's whistle and voice, a reveal, and a report card.
+**Polish (after sync 2):** Agent F builds the visual design system, the incoming-call screen, motion, the Ref's view, and the music from §0.4. Agent B builds the unmask in the scammer's voice (§5.7).
 **Stretch (only if the browser drill works by hour 12):** a real phone call through Twilio, with a live strike dashboard. This is the strongest Complexity and Originality moment, so Agent B goes for it the moment sync 2 says go.
 
 **Out of scope:** user accounts, a database, storing recordings, scheduling drills, mobile apps, translations.
@@ -63,9 +72,9 @@ Scam Drill is a fire drill for phone scams. A person who opted in talks to an AI
 
 | Person | Agent | Role | One-line mission |
 |--------|-------|------|------------------|
-| P1 | **Agent F** | Frontend | Every page the user sees, and playing the ref's sounds and voice |
-| P2 | **Agent B** | Backend and voice | Live voice in the browser and on the phone, plus the HTTP API |
-| P3 | **Agent L** | Logic and content | Rules engine, AI judge, scam scenarios, and the ref's lines |
+| P1 | **Agent F** | Frontend | Every page the user sees, the visual design, the music, and playing the ref's sounds and voice (Best Looking and Music entries) |
+| P2 | **Agent B** | Backend and voice | Live voice in the browser and on the phone, the unmask, plus the HTTP API |
+| P3 | **Agent L** | Logic and content | Rules engine, AI judge, scam scenarios, and the ref's lines, sounds, and unmask script |
 
 Each person runs **one** Claude Code agent on **one** branch on **their own laptop.** Role details are in `roles/FRONTEND.md`, `roles/BACKEND.md`, and `roles/LOGIC.md`.
 
@@ -98,7 +107,7 @@ scam-drill/
     └── logic.md                                    Agent L
 ```
 
-**The foundation is already written and tested** (`npm test` passes 13 tests). It includes working placeholders ("stubs") in `src/rules`, `src/judge`, `src/scenarios`, and `src/ref`, so the whole app runs from minute one. Agent L replaces those stubs. Nobody else touches them.
+**The foundation is already written and tested** (`npm test` passes 16 tests). It includes working placeholders ("stubs") in `src/rules`, `src/judge`, `src/scenarios`, and `src/ref`, so the whole app runs from minute one. Agent L replaces those stubs. Nobody else touches them.
 
 ## 4. Locked foundation and change requests
 
@@ -129,8 +138,10 @@ RefEvent   { tier: "autofail" | "strike" | "warning" | "good_defense",
              quote: string,         // REDACTED: digits replaced with •
              source: "rules" | "ai",
              confidence: number,    // 0..1, rules always 1
-             t: number }
-RefScript  { say: string | null, sound: "buzzer" | "chime" | null }
+             t: number,
+             downgraded?: "low_confidence" | "repeat_type" }   // set ONLY by the core (§5.2)
+RefScript  { say: string | null,    // the core redacts digits as a safety net
+             sound: "whistle" | "red_card" | "chime" | "fanfare" | null }  // unknown → null (core)
 WireAction { type: "strike_called" | "warning_shown" | "credit_shown" | "reveal",
              callId: string,
              ref: RefScript,
@@ -149,8 +160,8 @@ Scenario   { id, title, blurb, opening_line, goal, escalation: string[],
 
 - Any `autofail` → reveal, `failed_autofail`
 - The 3rd `strike` → reveal, `failed_strikes`
-- An AI `strike` with confidence < 0.8 → downgraded to `warning`
-- A second strike of the same `type` → downgraded to `warning`
+- An AI `strike` with confidence < 0.8 → downgraded to `warning`, tagged `downgraded: "low_confidence"`
+- A second strike of the same `type` → downgraded to `warning`, tagged `downgraded: "repeat_type"`
 - An AI `autofail` → rejected
 - The victim says "drill" or "stop" (whole word), presses End, or hangs up while live → reveal, `passed`
 - Events after a reveal are ignored
@@ -171,7 +182,8 @@ getScenario(id) → Scenario           // throws { code: "SCENARIO_NOT_FOUND", s
 listScenarios() → { id, title, blurb }[]
 
 // src/ref/index.js
-scriptFor(action) → RefScript        // no digits in `say`, kind tone
+scriptFor(action) → RefScript        // no digits in `say`, kind tone, picks the sound (§0.4)
+// For reveal, `say` is the unmask line: the scammer voice speaks it out of character (§5.7)
 ```
 
 ### 5.4 Server-side call API (foundation, Agent B calls it)
@@ -221,7 +233,8 @@ Unknown callId → 404 JSON. Used by the phone dashboard (and optionally the dri
 export function createVoiceClient(handlers) → VoiceClient
 
 handlers = {
-  onStatus(status),        // "connecting" | "live" | "ref_speaking" | "ended"
+  onStatus(status),        // "connecting" | "live" | "scammer_speaking" | "ref_speaking" | "ended"
+                           // "scammer_speaking" while scammer audio plays, then back to "live"
   onTurn(turn),            // REDACTED Turn, for an optional live transcript
   onActions(actions),      // WireAction[] from the server, in order
   onError(err),            // { code, message }
@@ -232,13 +245,18 @@ VoiceClient = {
   pauseScammer()     → void                  // mute scammer audio, stop it responding
   resumeScammer()    → void
   setRefSpeaking(on) → void                  // while true, the victim's mic transcripts are dropped (not sent to the server)
+  unmask(text)       → Promise<boolean>      // after a reveal: the scammer voice says `text` out of character.
+                                             // Resolves true when it finished speaking, false if it can't
+                                             // (then the caller falls back to speechSynthesis). Never rejects.
   end()              → Promise<void>         // asks the server to end; the reveal arrives through onActions
 }
 ```
 Rules for both implementations:
 - They never touch the DOM. Audio plays through `new Audio()` created off the page.
 - They never call `alert`, `confirm`, or navigate.
-- After a `reveal` action, they stop all audio and the mic, then call `onStatus("ended")`.
+- **On a `reveal` action:** stop the mic and stop sending turns straight away, but keep the scammer audio connection open for `unmask()`. Close everything and call `onStatus("ended")` once `unmask()` resolves, or after **15 s** if it's never called.
+- `unmask(text)` must cut off any in-progress scammer reply first, then make the model say `text` **verbatim and out of character**, and resolve when that audio has finished (cap it at 15 s). The mock resolves `false` immediately.
+- `"scammer_speaking"` is best-effort: if the client can't detect speech, it never emits it, and the UI must still work.
 
 ### 5.8 Browser storage
 
@@ -274,7 +292,7 @@ See `.env.example`. Agents read them through `process.env` only. Server code mus
 | 0 | Kickoff | Everyone has read SPEC.md and their role file, `.env` is filled in, `npm test` passes on every laptop |
 | 6 | **Sync 1** | L: rules and all 3 scenarios merged. B: `voice-client.js` talks to the scammer in a test page. F: drill page works end to end on the mock (`?mock=1`) |
 | 10 | **Sync 2: integration** | B merged. F tests the drill page against the real voice client. **Decision:** if latency is above about 1.5 s or the voice is unstable, cut the phone stretch goal |
-| 14 | Sync 3 | L: judge and ref lines merged. All 4 endings (pass, 3 strikes, autofail, "stop") work in the browser. F: design system, incoming-call screen, and Ref's view merged |
+| 14 | Sync 3 | L: judge and ref lines merged. All 4 endings (pass, 3 strikes, autofail, "stop") work in the browser. B: the unmask works in the scammer's voice. F: design system, incoming-call screen, and Ref's view merged |
 | 18 | Sync 4 | Stretch: a phone drill works with the live dashboard. F: tension score, sound identity, and "Replay your drill" merged. **Feature freeze** |
 | 18–22 | Bug fixes only | Each agent fixes bugs in its own paths. **Hour 20:** take the Devpost screenshots (§10) and draft the page |
 | 22–24 | Rehearsal (humans) | Run the §0.5 script 3 times on a speaker, 2 clean in a row. Record the backup video. **Submit on Devpost at least 1 hour before the deadline** |
@@ -284,9 +302,11 @@ See `.env.example`. Agents read them through `process.env` only. Server code mus
 1. `npm test` is green on `main`.
 2. `npm run simulate -- test/fixtures/transcript-cra-fail.json` ends with `failed_autofail` (after L merges).
 3. `npm run simulate -- test/fixtures/transcript-cra-pass.json` ends with `passed`.
-4. Browser, headphones on: open `/drill.html`, pick CRA, talk. Give your bank → strike 1 with the buzzer and ref voice. Say a fake card number → the reveal plays → the report card shows `failed_autofail`.
-5. Repeat, saying "I'll hang up and call the official number" → credit toast → say "stop" → the report card shows `passed`.
-6. (Stretch) `/phone.html` → call a verified phone → strikes appear live on the dashboard.
+4. Browser, headphones on: open `/drill.html?judge=1`, pick CRA, answer the incoming call, and talk. Give your bank → strike 1 with the whistle and ref voice, and the Ref's view shows "Rules · 100%". Say a fake card number → red-card sting → **the scammer voice speaks the unmask line** → the report card shows `failed_autofail`.
+5. Repeat, saying "I'll hang up and call the official number" → credit chime and toast → say "stop" → fanfare → the report card shows `passed`, and "Replay your drill" plays.
+6. Decline the incoming call → the celebration panel shows, with no network call to `/api/voice/session`.
+7. Repeat step 4 **on a speaker** with the music on: no scammer or music audio comes back as victim turns.
+8. (Stretch) `/phone.html` → call a verified phone → strikes appear live on the dashboard, and the unmask is spoken on the phone.
 
 ## 9. Definition of done (every role, every PR)
 

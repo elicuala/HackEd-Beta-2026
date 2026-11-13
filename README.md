@@ -1,6 +1,8 @@
 # Scam Drill
 
-A fire drill for phone scams. An AI scammer calls a person who opted in, a ref scores the call live, and the AI drops the act to teach the tactic that almost worked.
+> Scammers practice on your grandparents every day. We let them practice back.
+
+A fire drill for phone scams. An AI scammer calls a person who opted in, and a referee scores the call live: warnings, strikes, and a red card. When it's over, the scammer's own voice drops the act and explains the trick that almost worked. Then you get a report card, and you can replay your drill as music. Nothing is recorded.
 
 **Humans:** read `SPEC.md`, starting with **§0: How we win** (main track first, then Best Looking Project and Best Inclusion of Music). **Agents:** start at `CLAUDE.md`.
 
@@ -8,7 +10,7 @@ A fire drill for phone scams. An AI scammer calls a person who opted in, a ref s
 ```bash
 npm install            # from the lockfile, do not add packages
 cp .env.example .env   # fill in your keys (get them privately from the team)
-npm test               # 13 foundation tests must pass
+npm test               # 16 foundation tests must pass
 npm run dev            # http://localhost:3000
 npm run simulate -- test/fixtures/transcript-cra-fail.json
 ```

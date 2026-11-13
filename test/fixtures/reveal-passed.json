@@ -6,7 +6,7 @@
   "endedAt": "2026-11-14T18:00:00.000Z",
   "ref": {
     "say": "This was a Scam Drill. You're safe, and nothing you said was saved.",
-    "sound": "chime"
+    "sound": "fanfare"
   },
   "outcome": "passed",
   "events": [

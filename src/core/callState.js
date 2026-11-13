@@ -31,12 +31,14 @@ export function handleEvent(state, event) {
   const s = { ...state, events: [...state.events], struck: [...state.struck] };
   let e = { ...event };
 
-  // Low-confidence AI strikes and repeat strike types become warnings.
-  if (
-    e.tier === "strike" &&
-    ((e.source === "ai" && e.confidence < AI_STRIKE_MIN_CONFIDENCE) || s.struck.includes(e.type))
-  ) {
-    e = { ...e, tier: "warning" };
+  // Low-confidence AI strikes and repeat strike types become warnings, tagged with why
+  // (the frontend's Ref's view shows this, SPEC §0.3).
+  if (e.tier === "strike") {
+    if (e.source === "ai" && e.confidence < AI_STRIKE_MIN_CONFIDENCE) {
+      e = { ...e, tier: "warning", downgraded: "low_confidence" };
+    } else if (s.struck.includes(e.type)) {
+      e = { ...e, tier: "warning", downgraded: "repeat_type" };
+    }
   }
 
   s.events.push(e);

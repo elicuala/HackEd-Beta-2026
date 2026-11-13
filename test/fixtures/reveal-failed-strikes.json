@@ -19,6 +19,15 @@
       "t": 6
     },
     {
+      "tier": "warning",
+      "type": "urgency",
+      "quote": "I guess I should pay it today then.",
+      "source": "ai",
+      "confidence": 0.6,
+      "t": 10,
+      "downgraded": "low_confidence"
+    },
+    {
       "tier": "strike",
       "type": "confirmed_bank",
       "quote": "I'm with TD.",

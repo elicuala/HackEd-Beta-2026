@@ -46,7 +46,6 @@ public/
 │       ├── incoming-call.js ringing call screen shown before the drill goes live
 │       ├── visualizer.js    canvas visualizer fed by the score's AnalyserNode
 │       └── toast.js
-├── sounds/                  (optional) buzzer/chime files, only royalty-free or self-made
 └── fixtures/
     ├── mock-call-fail.json  script for the mock voice client (see below)
     ├── mock-call-pass.json
@@ -61,28 +60,31 @@ All scripts are ES modules: `<script type="module" src="/js/drill.js">`. No fram
 Headline, one-sentence pitch, "Start a practice drill" → `/drill.html`, a smaller "Phone drill" link → `/phone.html`, and a short "How it works" (3 steps). A consent note: "Drills are practice. Nothing you say is saved."
 
 ### `drill.html` + `drill.js`
-States: **choose → ringing → connecting → live → ended**. The ringing state (the incoming-call screen) is added in the visual pass. Until then, Start goes straight to connecting, and after it, "On Start" below means "on Answer".
-1. **Choose:** load `GET /api/scenarios` and show cards (title + blurb). A big "Start drill" button. A checkbox the user must tick: "I understand this is a practice scam call."
-2. **On Start** (inside the click handler): import the voice client.
+States: **choose → ringing → connecting → live → unmasking → ended**, plus **declined**. Build the core flow first with a plain "Answer" button standing in for the ringing screen, then make it the full incoming-call screen in the visual pass.
+1. **Choose:** load `GET /api/scenarios` and show cards (title + blurb). A big "Start drill" button. A checkbox the user must tick: "I understand this is a practice scam call." Start → **ringing**.
+2. **Ringing:** the incoming-call screen (see Visual design) with **Answer** and **Decline**.
+   - **Decline** → the **declined** state: a celebration panel ("Not answering unknown numbers is a great habit. Real scammers count on you picking up.") with "Answer this time" (back to ringing) and "Pick another drill". No call is created and nothing goes to the network.
+3. **On Answer** (inside the click handler, for mic and audio permission): import the voice client.
    - Default: `import("/js/voice-client.js")`
    - If the URL has `?mock=1`, or the real module fails to load: `import("/js/voice-client.mock.js")` and show a small "Demo mode" badge
    - `client = createVoiceClient({ onStatus, onTurn, onActions, onError })`, then `await client.start(scenarioId)`
-3. **Live view:** status text ("Connecting…", "On the call", "Ref is speaking"), strike lights (3), an event feed (the newest event on top), a big "End drill" button (→ `client.end()`), and a hint: "Say 'stop' anytime to end."
-4. **`onActions(actions)`:** process them **in order, one at a time** (await each):
+4. **Live view:** status text ("Connecting…", "On the call", "Caller is talking", "Ref is speaking"), the call timer, strike lights (3), an event feed (the newest event on top), the Ref's view, a big "End drill" button (→ `client.end()`), and a hint: "Say 'stop' anytime to end." `onStatus("scammer_speaking")` animates the caller avatar and ducks the music. It's best-effort, so never wait on it.
+5. **`onActions(actions)`:** process them **in order, one at a time** (await each):
    - `strike_called` → `strikeLights.set(n)`, add it to the feed, `await refPlayer.play(action, client)`
    - `warning_shown` → feed + toast (no sound)
    - `credit_shown` → feed + toast + `refPlayer.play` (chime)
-   - `reveal` → `await refPlayer.play(action, client)`, save `sessionStorage["scamDrill.result"] = JSON.stringify(action)`, go to `/report.html`
-5. **`onError`:** a friendly message with a "Try again" button. Never show raw error text or stack traces.
+   - `reveal` → **unmasking** state (the reveal flip, see Visual design) → `await refPlayer.play(action, client)`, save `sessionStorage["scamDrill.result"] = JSON.stringify(action)`, go to `/report.html`
+6. **`onError`:** a friendly message with a "Try again" button. Never show raw error text or stack traces.
 
 ### `ref-player.js`
 ```js
 export async function play(action, client)  // resolves when the ref is done
 ```
-1. If `action.ref.sound` is set: `client.pauseScammer()`, `client.setRefSpeaking(true)`, then play the sound. Generate buzzer and chime with the **Web Audio API** (an oscillator plus a gain envelope, about 400 ms) so no files are needed.
-2. If `action.ref.say` is set: speak it with `speechSynthesis`. Pick a voice **different from** the scammer's (prefer an English voice whose name includes "Google" or "Samantha", otherwise the first `en-` voice). Rate 0.95. Wait for `onend`, with a timeout fallback of `say.length * 80 ms`.
-3. Then `client.setRefSpeaking(false)` and, unless the action is `reveal`, `client.resumeScammer()`.
-4. Never throw. If speech isn't available, show the text as a toast instead.
+1. If `action.ref.sound` is set: `client.pauseScammer()`, `client.setRefSpeaking(true)`, then play that sound by name (`whistle`, `red_card`, `chime`, `fanfare`) through `audio/sfx.js`. Until the music pass, a simple oscillator plus gain envelope (about 400 ms) per name is enough. Ignore unknown names.
+2. If `action.ref.say` is set and the action is a **`reveal`**: this is the unmask. `const ok = await client.unmask(say)`. If `ok` is false (the mock, or a voice failure), fall back to `speechSynthesis` as below. Show the line as a caption on the reveal card either way.
+3. If `action.ref.say` is set for any other action: speak it with `speechSynthesis`. Pick a voice **different from** the scammer's (prefer an English voice whose name includes "Google" or "Samantha", otherwise the first `en-` voice). Rate 0.95. Wait for `onend`, with a timeout fallback of `say.length * 80 ms`.
+4. Then `client.setRefSpeaking(false)` and, unless the action is `reveal`, `client.resumeScammer()`.
+5. Never throw. If speech isn't available, show the text as a toast instead.
 
 ### `report.html` + `report.js`
 Data: `sessionStorage["scamDrill.result"]`, or `?fixture=passed|failed-strikes|failed-autofail` → `/fixtures/reveal-<name>.json`. With no data: "No drill yet" + a button to `/drill.html`.
@@ -105,7 +107,7 @@ Same exports and behavior rules as SPEC §5.7. It reads `/fixtures/mock-call-fai
   { "delayMs": 2500, "kind": "actions", "data": [ /* WireAction objects */ ] }
 ]
 ```
-It respects `pauseScammer`, `setRefSpeaking`, and `end()` (`end` emits a `passed` reveal if the call is still live). Build the WireActions in these fixtures from `test/fixtures/reveal-failed-autofail.json` so the shapes match exactly.
+It respects `pauseScammer`, `setRefSpeaking`, and `end()` (`end` emits a `passed` reveal if the call is still live). It emits `"scammer_speaking"` for about 2 s on each scammer turn, then `"live"`. `unmask()` resolves `false` immediately, so the ref-player's `speechSynthesis` fallback gets exercised. Build the WireActions in these fixtures from `test/fixtures/reveal-*.json` so the shapes match exactly. That includes `ref.sound` values from the new set and at least one event with `downgraded`, so the Ref's view has something to show.
 
 ## Design and accessibility requirements
 - Base font 18px, line-height 1.6, max content width about 720px, big tap targets (48px minimum)
@@ -120,19 +122,19 @@ It respects `pauseScammer`, `setRefSpeaking`, and `end()` (`end` emits a `passed
 Beautiful and accessible aren't in tension here: big type and strong contrast *are* the look.
 - **Concept: the referee.** It should feel like a calm, trustworthy official. Strike lights read like a scoreboard, a whistle icon marks strikes, a red card marks an autofail, and a green flag marks credit. Use inline SVG icons that you draw yourself (no icon CDN).
 - **Design tokens in `base.css`:** a neutral background, one confident accent, and semantic colors for warning, strike, autofail, and good defense, each with a text label and an icon so color is never the only signal. Plan both the light and dark palettes; don't auto-invert. Use a system font stack, or self-hosted font files in `public/fonts/` only if the licence allows it. Use a type scale with clear hierarchy: one big display size for the drill state.
-- **The incoming-call screen (`ui/incoming-call.js`):** after Start, show a full-screen phone-style ringing card: the caller label "Unknown caller" with the scenario title underneath, a pulsing ring, and big **Answer** and **Decline** buttons. **Answer** is the click that calls `client.start()` (so the mic and audio permissions still come from a user gesture). **Decline** counts as a passed drill and should be celebrated ("Not answering unknown numbers is a great habit").
+- **The incoming-call screen (`ui/incoming-call.js`):** after Start, show a full-screen phone-style ringing card: the caller label "Unknown caller" with the scenario title underneath, a pulsing ring, a synthesized ringtone (through `audio/engine.js`, which respects the Music toggle; a ringtone can't autoplay, but the Start click unlocks audio), and big **Answer** and **Decline** buttons. **Answer** is the click that calls `client.start()`, so the mic and audio permissions still come from a user gesture. **Decline** goes to the celebrated declined state (see the drill page spec). It's not a report card, because no call exists.
 - **The live call screen:** the call timer, the scenario's caller label, the strike scoreboard, the visualizer, the event feed, and the Ref's view panel.
-- **The reveal moment:** this is the signature visual. The caller card flips (or cross-fades) from "Unknown caller" to a "This was a Scam Drill" card in the accent color as the ref speaks. It should feel like the mask coming off.
+- **The reveal moment (the unmask):** this is the signature visual. The caller card flips (or cross-fades) from "Unknown caller" to a "This was a Scam Drill" card in the accent color while the scammer's own voice drops the act, with the line shown as a caption. It should feel like the mask coming off.
 - **Motion:** strike lights "slam" on with a small scale and shake, toasts slide in, report cards stagger in. Keep it to 150–400 ms and ease-out. Under `prefers-reduced-motion`, switch to plain fades or nothing.
 - **The report card** should look good enough to print and stick on the fridge: a big outcome badge, a clean timeline, and the takeaway in a callout. The print stylesheet should give one tidy page.
-- **The Ref's view panel (`ui/refs-view.js`, SPEC §0.3):** a `<details>` element, open by default when the URL has `?judge=1` (the demo) and closed otherwise. It shows each event's tier, type, quote, a source badge ("Rules" or "AI judge"), and confidence as a percentage, and marks any `ai` event that arrived as a warning with confidence ≥ 0.8 as "downgraded by the core". This is where judges see the complexity, so make it look like a pro tool: monospace numbers and tidy alignment.
+- **The Ref's view panel (`ui/refs-view.js`, SPEC §0.3):** a `<details>` element, open by default when the URL has `?judge=1` (the demo) and closed otherwise. It shows each event's tier, type, quote, a source badge ("Rules" or "AI judge"), and confidence as a percentage, and, when `event.downgraded` is set, the reason in plain words (`low_confidence` → "AI wasn't sure enough to call a strike", `repeat_type` → "Already called"). This is where judges see the complexity, so make it look like a pro tool: monospace numbers and tidy alignment.
 - **Landing page:** a hero with the tagline, a 3-step "How it works" with icons, and one clear call to action. It's the first screenshot on Devpost.
 
 ## Music and sound (Best Inclusion of Music, after the visual pass)
-Everything uses the Web Audio API: no audio files, no libraries, no new dependencies. It's driven only by `WireAction`s you already receive, so no contract changes are needed.
+Everything uses the Web Audio API: no audio files, no libraries, no new dependencies. It's driven only by the `WireAction`s and voice-client statuses you already receive.
 - **`audio/engine.js`:** one lazily created `AudioContext`, resumed inside the Answer click (autoplay policy). It has a master gain, a music bus, and an sfx bus. **Music on/off** is a visible toggle on the drill and report pages, stored in `localStorage["scamDrill.music"]` (default on). If Web Audio is missing, everything no-ops silently.
-- **`audio/sfx.js`, the ref's sound identity:** extend `ref-player.js` so that `ref.sound` plus the action picks the sound. `strike_called` gets a two-tone referee **whistle** (replacing the plain buzzer), `reveal` with `failed_autofail` gets a short low **red-card sting**, `credit_shown` gets a bright two-note **chime**, and `reveal` with `passed` gets a 2-second **victory fanfare** (an arpeggiated major chord). Keep each one under 2 s.
-- **`audio/score.js`, the adaptive tension score:** a quiet generative loop while the call is `live`. Layer 0 (0 strikes) is a soft pad at about 70 BPM. Each strike adds a layer: strike 1 adds a heartbeat pulse, strike 2 raises the tempo and shifts to minor, strike 3 is never heard because the reveal comes first. A `warning_shown` adds a brief swell, and `good_defense` resolves to a major chord for a few bars. **Duck the music to about 10%** while `refPlayer` is playing, and keep it low overall (it must never fight the scammer's voice). On `reveal`: a hard stop, then the sfx.
+- **`audio/sfx.js`, the ref's sound identity:** one function per `RefScript.sound` name (Agent L's ref picks which one). `whistle` is a two-tone referee whistle with a little pitch wobble, `red_card` is a short low sting, `chime` is a bright two-note chime, and `fanfare` is a 2-second victory fanfare (an arpeggiated major chord). Keep each one under 2 s. Plus `ring()` for the incoming-call screen.
+- **`audio/score.js`, the adaptive tension score:** a quiet generative loop while the call is `live`. Layer 0 (0 strikes) is a soft pad at about 70 BPM. Each strike adds a layer: strike 1 adds a heartbeat pulse, strike 2 raises the tempo and shifts to minor, strike 3 is never heard because the reveal comes first. A `warning_shown` adds a brief swell, and `good_defense` resolves to a major chord for a few bars. **Duck the music to about 10%** while the status is `scammer_speaking` or `refPlayer` is playing, and keep it low overall (it must never fight the scammer's voice). On `reveal`: a hard stop, then the sfx.
 - **Mic bleed:** music played through speakers can leak into the mic and get transcribed. Test it at sync 2 against the real voice client. If it does leak, keep the score at headphone-safe levels and add the note "Music plays best with headphones". The toggle is your escape hatch.
 - **`ui/visualizer.js`:** a `<canvas>` fed by an `AnalyserNode` on the music bus, styled to match (bars or a ring around the caller avatar). It's decorative, so give it `aria-hidden="true"`, and draw a static frame under `prefers-reduced-motion`.
 - **`audio/replay.js`, "Replay your drill" on the report card:** turns the `events` timeline into a melody of about 10 s. Time maps from `t` (scaled to fit), `good_defense` notes step up a major scale, `warning` notes hold a neutral tone, `strike` notes step down, and an autofail ends on a low sting. As each note plays, its event card gets a highlight (an `aria-current` style plus a visible outline). It needs a Play/Stop button and must never autoplay.
@@ -147,18 +149,18 @@ Everything uses the Web Audio API: no audio files, no libraries, no new dependen
 Run the real server the whole time: `npm run dev` → http://localhost:3000.
 
 ## Acceptance checklist (paste results into `handoff/frontend.md`)
-- [ ] `/drill.html?mock=1`: the full fail script plays (strikes light up, buzzer and ref voice fire, the reveal goes to the report)
+- [ ] `/drill.html?mock=1`: the full fail script plays (strikes light up, the whistle and ref voice fire, the unmask falls back to speechSynthesis with a caption, and the reveal goes to the report)
 - [ ] `/drill.html?mock=pass`: ends on a passed report card
 - [ ] `/report.html?fixture=passed`, `failed-strikes`, and `failed-autofail` all render correctly. With no data, it shows the empty state
 - [ ] `/phone.html` shows the "not set up" state when the backend returns `PHONE_DISABLED`
 - [ ] Keyboard-only run through drill → report works
 - [ ] Lighthouse accessibility ≥ 95 on index, drill, and report (record the scores)
 - [ ] No console errors on any page
-- [ ] Incoming-call screen: Answer starts the drill, Decline ends on a celebrated passed card
-- [ ] `/drill.html?mock=1&judge=1`: the Ref's view shows the source and confidence for every event
+- [ ] Incoming-call screen: the ringtone plays, Answer starts the drill, and Decline shows the celebration panel with no network request
+- [ ] `/drill.html?mock=1&judge=1`: the Ref's view shows the source and confidence for every event, and the downgrade reason where there is one
 - [ ] The reveal flip plays, and with reduced motion it's a plain fade
 - [ ] Whistle, red-card sting, chime, and fanfare each play at the right moment on the mock
-- [ ] The tension score adds a layer per strike, ducks under the ref, and stops on the reveal. The Music toggle silences everything and is remembered
+- [ ] The tension score adds a layer per strike, ducks under the scammer (`scammer_speaking`) and the ref, and stops on the reveal. The Music toggle silences everything and is remembered
 - [ ] "Replay your drill" plays on all 3 report fixtures and highlights each event in time
 - [ ] Mic bleed tested with the real voice client on a speaker (write the result in the handoff)
 - [ ] Light and dark screenshots of all 4 pages saved for Devpost (SPEC §10)

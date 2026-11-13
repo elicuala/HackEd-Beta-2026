@@ -2,7 +2,9 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { redact, makeEvent, validateEvent, validateTurn } from "../src/shared/contract.js";
+import {
+  redact, makeEvent, validateEvent, validateTurn, sanitizeScript, SOUNDS,
+} from "../src/shared/contract.js";
 import { createCallState, handleEvent, endCall } from "../src/core/callState.js";
 import { onTurn } from "../src/core/pipeline.js";
 import * as calls from "../src/core/calls.js";
@@ -52,6 +54,32 @@ test("core: low-confidence AI strike and repeat strike type become warnings", ()
   r = handleEvent(r.state, rule("strike", "secrecy"));
   assert.equal(r.actions[0].type, "warning_shown");
   assert.equal(r.state.strikes, 1);
+});
+
+test("core: downgraded warnings say why (for the Ref's view)", () => {
+  let r = handleEvent(fresh(), ai("strike", "urgency", 0.5));
+  assert.equal(r.actions[0].event.downgraded, "low_confidence");
+  r = handleEvent(r.state, rule("strike", "secrecy"));
+  assert.equal("downgraded" in r.actions[0].event, false);
+  r = handleEvent(r.state, ai("strike", "secrecy", 0.95));
+  assert.equal(r.actions[0].event.downgraded, "repeat_type");
+  r = handleEvent(r.state, ai("warning", "fear", 0.9));
+  assert.equal("downgraded" in r.actions[0].event, false);
+  assert.ok(!validateEvent({ ...rule("warning", "x"), downgraded: "nope" }).ok);
+});
+
+test("contract: sanitizeScript keeps known sounds and strips digits", () => {
+  for (const sound of SOUNDS) assert.equal(sanitizeScript({ say: "hi", sound }).sound, sound);
+  assert.deepEqual(sanitizeScript({ say: "Strike 2.", sound: "buzzer" }), { say: "Strike •.", sound: null });
+  assert.deepEqual(sanitizeScript(undefined), { say: null, sound: null });
+  assert.deepEqual(sanitizeScript({ say: "  ", sound: "chime" }), { say: null, sound: "chime" });
+});
+
+test("calls: reveal sound follows the outcome (stub ref)", async () => {
+  const { callId } = calls.createCall({ scenarioId: "cra" });
+  const [reveal] = await calls.endCall(callId);
+  assert.equal(reveal.outcome, "passed");
+  assert.equal(reveal.ref.sound, "fanfare");
 });
 
 test("core: AI autofail is rejected", () => {
@@ -128,6 +156,7 @@ test("fixtures: reveal fixtures match the contract", () => {
   for (const f of ["reveal-passed.json", "reveal-failed-strikes.json", "reveal-failed-autofail.json"]) {
     const r = fixture(f);
     assert.equal(r.type, "reveal");
+    assert.ok(SOUNDS.includes(r.ref.sound), `${f}: bad ref.sound`);
     for (const e of r.events) assert.ok(validateEvent(e).ok, `${f}: ${validateEvent(e).errors}`);
   }
 });
