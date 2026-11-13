@@ -1,0 +1,156 @@
+<title>Scam Drill · Porch Light</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: evening, one warm lamp. A single dark theme by choice; the caller sits in a glowing ring that the music visualizer drives. */
+:root{
+  --night:#0F1B24; --dusk:#172734; --raise:#1F3343; --mist:#D5E0E8; --muted:#9FB2C0; --line:#2B4153;
+  --lamp:#F3B562; --calm:#7CC9A6; --alarm:#F27D6B;
+  --display:"Literata",Georgia,serif; --body:"Figtree",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--night);color:var(--mist);font:19px/1.65 var(--body)}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding-block:22px}
+.logo{font:700 26px/1 var(--display);display:flex;align-items:center;gap:10px}
+.bulb{width:16px;height:16px;border-radius:50%;background:var(--lamp);box-shadow:0 0 18px 4px rgba(243,181,98,.55)}
+nav{display:flex;gap:20px}nav a{color:var(--mist)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--lamp);outline-offset:3px}
+.hero{padding-block:48px 40px;display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:center}
+h1{font:500 clamp(38px,5.6vw,62px)/1.1 var(--display);margin:0 0 20px;text-wrap:balance}
+h1 em{color:var(--lamp);font-style:italic}
+.lede{color:var(--muted);font-size:20px;max-width:38ch;margin:0 0 26px}
+.btn{display:inline-flex;align-items:center;min-height:56px;padding:0 28px;border-radius:999px;background:var(--lamp);color:#1A1206;font:700 20px/1 var(--body);text-decoration:none;border:0;cursor:pointer}
+.btn.q{background:transparent;color:var(--mist);box-shadow:inset 0 0 0 2px var(--line)}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.fine{font-size:16px;color:var(--muted)}
+.glow{aspect-ratio:1;max-width:320px;width:100%;justify-self:center;border-radius:50%;background:radial-gradient(circle,rgba(243,181,98,.32),rgba(243,181,98,0) 65%);display:grid;place-items:center}
+.glow span{width:44%;aspect-ratio:1;border-radius:50%;background:var(--dusk);border:2px solid var(--lamp);display:grid;place-items:center;font:700 54px/1 var(--display);color:var(--lamp)}
+h2{font:500 36px/1.15 var(--display);margin:0 0 22px}
+section{padding-block:36px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.steps li{display:grid;gap:6px}
+.steps .n{font:italic 500 40px/1 var(--display);color:var(--lamp)}
+.steps b{font:700 21px/1.3 var(--body)}
+.steps p{margin:0;color:var(--muted)}
+.call{background:var(--dusk);border:1px solid var(--line);border-radius:28px;padding:30px;display:grid;grid-template-columns:300px 1fr;gap:30px}
+.ring{position:relative;width:220px;height:220px;margin:0 auto}
+.ring canvas{position:absolute;inset:0;width:100%;height:100%}
+.ring .face{position:absolute;inset:50px;border-radius:50%;background:var(--raise);display:grid;place-items:center;font:700 44px/1 var(--display);color:var(--muted)}
+.center{text-align:center;display:grid;gap:8px}
+.who{font:500 26px/1.2 var(--display)}
+.timer{color:var(--muted);font-variant-numeric:tabular-nums}
+.lights{display:flex;gap:12px;justify-content:center}
+.l{width:52px;height:52px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;color:var(--muted)}
+.l.on{background:var(--alarm);border-color:var(--alarm);color:#2A0B06;box-shadow:0 0 18px rgba(242,125,107,.55)}
+.endb{background:var(--raise);color:var(--mist);justify-self:center;box-shadow:inset 0 0 0 2px var(--alarm)}
+.feed{list-style:none;margin:0;padding:0;display:grid;gap:12px;align-content:start}
+.feed li{background:var(--raise);border-radius:16px;padding:14px 16px;display:grid;gap:4px}
+.feed .top{display:flex;justify-content:space-between;gap:10px}
+.feed time{color:var(--muted);font-variant-numeric:tabular-nums}
+.tag{font:700 14px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;display:inline-flex;gap:8px;align-items:center}
+.tag::before{content:"";width:12px;height:12px;border-radius:3px;background:currentColor}
+.tag.s{color:var(--alarm)}.tag.w{color:var(--lamp)}.tag.g{color:var(--calm)}
+.feed q{font:italic 500 19px/1.4 var(--display)}
+details{grid-column:1/-1;border-top:1px solid var(--line);padding-top:14px}
+summary{font:700 19px/1 var(--body);cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--lamp)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:15px/1.4 ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:400}
+.report{background:var(--mist);color:#13202B;border-radius:28px;padding:34px;display:grid;gap:18px}
+.report .k{font:700 14px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#4A5D6C}
+.report h3{font:500 34px/1.15 var(--display);margin:0;text-wrap:balance}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tl li{display:grid;grid-template-columns:52px 110px 1fr;gap:12px;padding-bottom:10px;border-bottom:1px solid #B9C7D2}
+.tl time{color:#4A5D6C;font-variant-numeric:tabular-nums}
+.tl .tag.s{color:#A3301F}.tl .tag.w{color:#8A5A10}
+.habit{background:#13202B;color:var(--mist);border-radius:18px;padding:18px 20px}
+.habit b{display:block;color:var(--lamp);font:italic 500 20px/1.3 var(--display);margin-bottom:4px}
+.replay{justify-self:start;background:#13202B;color:var(--lamp)}
+footer{padding-block:30px;color:var(--muted);font-size:16px}
+@media (max-width:780px){.hero,.call{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.tl li{grid-template-columns:48px 1fr}.tl q{grid-column:1/-1}}
+</style>
+
+<header><div class="wrap">
+  <div class="logo"><span class="bulb" aria-hidden="true"></span>Scam Drill</div>
+  <nav aria-label="Main"><a href="#how">How it works</a><a href="#report">Report card</a></nav>
+</div></header>
+<main>
+<div class="wrap hero">
+  <div>
+    <h1>Scammers practice on your grandparents every day. <em>We let them practice back.</em></h1>
+    <p class="lede">A calm practice call, at your own pace. Quiet music plays along and tightens when something risky slips out. Afterwards, the caller tells you exactly how the trick works.</p>
+    <div class="ctas"><a class="btn" href="#live">Start a practice drill</a><a class="btn q" href="#how">Phone drill</a></div>
+    <p class="fine">Drills are practice. Nothing you say is saved.</p>
+  </div>
+  <div class="glow" aria-hidden="true"><span>?</span></div>
+</div>
+
+<section id="how"><div class="wrap">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><span class="n">i.</span><b>The phone rings</b><p>Answer when you feel ready, or decline. Declining counts as a win.</p></li>
+    <li><span class="n">ii.</span><b>A ref listens kindly</b><p>A whistle for risky answers. The music shifts so you can feel it.</p></li>
+    <li><span class="n">iii.</span><b>The caller confesses</b><p>The same voice drops the act and teaches you the trick.</p></li>
+  </ol>
+</div></section>
+
+<section id="live"><div class="wrap">
+  <h2>On the call</h2>
+  <div class="call">
+    <div class="center">
+      <div class="ring"><canvas id="viz" width="440" height="440" aria-hidden="true"></canvas><div class="face" aria-hidden="true">?</div></div>
+      <div class="who">Unknown caller</div>
+      <div class="timer">Tax agency call · 0:24</div>
+      <div class="lights" aria-live="assertive" aria-label="2 of 3 strikes"><div class="l on">1</div><div class="l on">2</div><div class="l">3</div></div>
+      <div class="timer">2 of 3 strikes</div>
+      <button class="btn endb" type="button">End drill</button>
+      <div class="fine">Say "stop" anytime to end.</div>
+    </div>
+    <ul class="feed" aria-live="polite">
+      <li><div class="top"><span class="tag s">Strike</span><time>0:14</time></div><b>You named your bank</b><q>I'm with TD.</q></li>
+      <li><div class="top"><span class="tag w">Warning</span><time>0:10</time></div><b>You sounded rushed</b><q>I guess I should pay it today then.</q></li>
+      <li><div class="top"><span class="tag w">Warning</span><time>0:06</time></div><b>You sounded scared</b><q>Oh no, really? What do I owe?</q></li>
+    </ul>
+    <details open><summary>Ref's view</summary><div class="tbl"><table>
+      <thead><tr><th>t</th><th>tier</th><th>type</th><th>source</th><th>conf</th><th>note</th></tr></thead>
+      <tbody><tr><td>0:06</td><td>warning</td><td>fear</td><td>AI judge</td><td>70%</td><td></td></tr>
+      <tr><td>0:10</td><td>warning</td><td>urgency</td><td>AI judge</td><td>60%</td><td>downgraded · low confidence</td></tr>
+      <tr><td>0:14</td><td>strike</td><td>confirmed_bank</td><td>Rules</td><td>100%</td><td></td></tr></tbody></table></div></details>
+  </div>
+</div></section>
+
+<section id="report"><div class="wrap">
+  <h2>Report card</h2>
+  <article class="report">
+    <span class="k">Tax agency call · 3 of 3 strikes</span>
+    <h3>Not this time, and that's exactly what practice is for.</h3>
+    <ol class="tl">
+      <li><time>0:06</time><span class="tag w">Warning</span><q>Oh no, really? What do I owe?</q></li>
+      <li><time>0:14</time><span class="tag s">Strike</span><q>I'm with TD.</q></li>
+      <li><time>0:24</time><span class="tag s">Strike</span><q>Okay, I won't tell anyone.</q></li>
+    </ol>
+    <div class="habit"><b>One habit to keep</b>When in doubt, hang up and call the number on the back of your card.</div>
+    <button class="btn replay" type="button">▶ Replay your drill</button>
+  </article>
+</div></section>
+</main>
+<footer><div class="wrap">Concept 5 of 5 · Porch Light: an evening call, calm and musical. Dark by design.</div></footer>
+<script>
+(function(){
+  const c=document.getElementById('viz');if(!c)return;const x=c.getContext('2d');
+  const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function draw(t){
+    x.clearRect(0,0,440,440);const n=48;
+    for(let i=0;i<n;i++){
+      const a=i/n*Math.PI*2, h=18+14*Math.abs(Math.sin(i*.7+t/600))+10*Math.abs(Math.sin(i*1.9+t/900));
+      const r1=120, r2=r1+h;
+      x.strokeStyle=i%6===0?'#F27D6B':'#F3B562';x.globalAlpha=.85;x.lineWidth=6;x.lineCap='round';
+      x.beginPath();x.moveTo(220+Math.cos(a)*r1,220+Math.sin(a)*r1);x.lineTo(220+Math.cos(a)*r2,220+Math.sin(a)*r2);x.stroke();
+    }
+    if(!still)requestAnimationFrame(draw);
+  }
+  draw(0);
+})();
+</script>

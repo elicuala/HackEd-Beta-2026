@@ -1,0 +1,454 @@
+<title>Scam Drill · Ref Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a night-sky glass console. Aurora light behind frosted panels; a living voice orb is the centrepiece and doubles as the strike meter. Dark by design. */
+:root{
+  --void:#06080F; --glass:rgba(255,255,255,.055); --glass-2:rgba(255,255,255,.09); --edge:rgba(255,255,255,.12);
+  --text:#EEF2FF; --dim:#A9B2CF;
+  --cyan:#5BE7F0; --violet:#A08CFF; --coral:#FF6B88; --mint:#55F2B0; --amber:#FFCB66;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif; --body:"Manrope",system-ui,-apple-system,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--void)}
+body{background:var(--void);color:var(--text);font:18px/1.6 var(--body);min-height:100%;overflow-x:hidden}
+/* Static aurora: soft radial gradients painted once, no blur filter, no animation. */
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(50vw 45vw at 8% 0%,rgba(43,91,255,.30),transparent 70%),
+    radial-gradient(45vw 40vw at 100% 18%,rgba(122,60,255,.26),transparent 70%),
+    radial-gradient(45vw 40vw at 55% 100%,rgba(0,194,209,.18),transparent 70%)}
+.page{position:relative;z-index:1}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:rgba(6,8,15,.7)}
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(8,10,19,.94);border-bottom:1px solid var(--edge)}
+.nav .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:64px}
+.brand{font:700 17px/1 var(--display);letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.brand i{width:14px;height:14px;border-radius:50%;background:conic-gradient(from 0deg,var(--cyan),var(--violet),var(--coral),var(--cyan));box-shadow:0 0 16px var(--cyan)}
+.chip{font:600 14px/1 var(--mono);padding:9px 14px;border-radius:999px;border:1px solid var(--edge);background:var(--glass);display:inline-flex;gap:8px;align-items:center;color:var(--dim)}
+.chip i{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.chip[data-s="live"]{color:var(--cyan)}.chip[data-s="scammer_speaking"]{color:var(--coral)}.chip[data-s="ref_speaking"]{color:var(--amber)}.chip[data-s="connecting"],.chip[data-s="ringing"]{color:var(--violet)}.chip[data-s="ended"]{color:var(--mint)}
+.hero{padding-block:56px 40px;display:grid;gap:18px}
+.kicker{font:600 14px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)}
+h1{font:700 clamp(34px,5.4vw,64px)/1.08 var(--display);letter-spacing:-.02em;margin:0;max-width:19ch;text-wrap:balance}
+h1 span{background:linear-gradient(90deg,var(--cyan),var(--violet) 55%,var(--coral));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:0;color:var(--dim);font-size:20px;max-width:54ch}
+.stack{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.stack span{font:13px/1 var(--mono);color:var(--dim);border:1px solid var(--edge);border-radius:999px;padding:8px 12px;background:var(--glass)}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start;padding-bottom:28px}
+.col{display:grid;gap:24px;min-width:0}
+.glass{position:relative;background:linear-gradient(180deg,rgba(26,31,52,.86),rgba(16,20,36,.86));border:1px solid var(--edge);border-radius:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.label{font:600 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;align-items:center;gap:10px;padding:20px 22px 0}
+.label b{color:var(--text);font-weight:600}
+.pad{padding:18px 22px 22px}
+/* scenario options */
+.opts{display:grid;gap:10px}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;padding:16px;border-radius:20px;border:1px solid var(--edge);background:rgba(255,255,255,.03);cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;position:relative}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .ico{grid-row:span 2;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.06);border:1px solid var(--edge)}
+.opt .ico svg{width:24px;height:24px}
+.opt b{font:600 19px/1.3 var(--body)}
+.opt span{color:var(--dim);font-size:15px;line-height:1.4}
+.opt:has(input:checked){border-color:var(--cyan);background:rgba(91,231,240,.07);box-shadow:0 0 0 1px var(--cyan),0 0 30px -8px var(--cyan)}
+.opt:has(input:checked) .ico{border-color:var(--cyan);color:var(--cyan)}
+.opt:has(input:focus-visible){outline:3px solid var(--violet);outline-offset:3px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-top:1px solid var(--edge);cursor:pointer}
+.toggle:first-of-type{border-top:0}
+.toggle b{display:block;font-weight:600}.toggle small{color:var(--dim);font-size:15px}
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:56px;height:32px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid var(--edge);position:relative;cursor:pointer;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw:checked{background:linear-gradient(90deg,var(--cyan),var(--violet))}
+.sw:checked::after{transform:translateX(24px)}
+.sw:focus-visible{outline:3px solid var(--violet);outline-offset:3px}
+.go{font:700 18px/1 var(--display);letter-spacing:.02em;min-height:60px;width:100%;border:0;border-radius:18px;cursor:pointer;color:#05070D;background:linear-gradient(90deg,var(--cyan),var(--violet));box-shadow:0 10px 40px -10px var(--violet);transition:transform .15s,box-shadow .2s}
+.go:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 50px -10px var(--cyan)}
+.go:disabled{background:rgba(255,255,255,.08);color:var(--dim);box-shadow:none;cursor:not-allowed}
+.go.ghost{background:transparent;color:var(--text);border:1px solid var(--edge);box-shadow:none}
+button:focus-visible{outline:3px solid var(--violet);outline-offset:3px}
+.fine{font-size:14px;color:var(--dim);margin:12px 0 0}
+/* orb stage */
+.stage{display:grid;justify-items:center;gap:14px;padding:22px 22px 26px;text-align:center}
+.orb{width:280px;height:280px;max-width:100%}
+.caller{font:600 13px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.who{font:700 24px/1.2 var(--display);letter-spacing:-.01em}
+.clock{font:600 44px/1 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.strikes{font:600 16px/1 var(--mono);color:var(--dim);display:flex;gap:10px;align-items:center}
+.strikes i{width:28px;height:6px;border-radius:999px;background:rgba(255,255,255,.12)}
+.strikes i.on{background:var(--coral);box-shadow:0 0 12px var(--coral)}
+.refline{width:100%;text-align:left;border-radius:20px;padding:14px 16px;border:1px solid rgba(255,203,102,.35);background:rgba(255,203,102,.07)}
+.refline small{display:block;font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--amber);margin-bottom:6px}
+.refline p{margin:0;font-size:18px}
+.callbtns{display:flex;gap:28px;justify-content:center;margin-top:8px}
+.rb{display:grid;gap:8px;justify-items:center;background:none;border:0;color:var(--dim);font:600 15px var(--body);cursor:pointer}
+.rb span{width:74px;height:74px;border-radius:50%;display:grid;place-items:center}
+.rb svg{width:32px;height:32px}
+.rb.acc span{background:var(--mint);box-shadow:0 0 30px -4px var(--mint)}
+.rb.dec span{background:var(--coral);box-shadow:0 0 30px -4px var(--coral)}
+.rb.dec svg{transform:rotate(135deg)}
+.hint{margin:0;color:var(--dim);font-size:15px}
+/* chat */
+.chat{height:470px;overflow-y:auto;padding:16px 22px 22px;display:flex;flex-direction:column;gap:8px}
+.chat::-webkit-scrollbar{width:8px}.chat::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
+.msg{max-width:80%;padding:12px 16px;border-radius:20px;font-size:18px;line-height:1.42;overflow-wrap:anywhere}
+.msg.them{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid var(--edge);border-bottom-left-radius:6px}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,rgba(91,231,240,.22),rgba(160,140,255,.22));border:1px solid rgba(91,231,240,.35);border-bottom-right-radius:6px}
+.msg.unmask{align-self:stretch;max-width:none;background:linear-gradient(135deg,rgba(255,107,136,.16),rgba(160,140,255,.12));border:1px solid rgba(255,107,136,.45);box-shadow:0 0 40px -14px var(--coral)}
+.who-l{font:600 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:10px 6px 2px}
+.who-l.r{align-self:flex-end}.who-l.u{color:var(--coral)}
+.sys{align-self:center;font:500 13px/1 var(--mono);color:var(--dim);margin:8px 0;letter-spacing:.06em}
+.note{align-self:center;max-width:94%;display:flex;gap:10px;align-items:baseline;padding:10px 14px;border-radius:14px;font-size:16px;line-height:1.4;border:1px solid}
+.note b{font:600 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;flex:none}
+.note.warn{border-color:rgba(255,203,102,.35);background:rgba(255,203,102,.06)}.note.warn b{color:var(--amber)}
+.note.bad{border-color:rgba(255,107,136,.45);background:rgba(255,107,136,.08)}.note.bad b{color:var(--coral)}
+.note.good{border-color:rgba(85,242,176,.4);background:rgba(85,242,176,.07)}.note.good b{color:var(--mint)}
+.empty{margin:auto;text-align:center;color:var(--dim);font-size:16px;max-width:30ch}
+/* ref's view */
+.rv{display:grid;gap:10px;padding:14px 22px 22px}
+.rv-row{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid var(--edge)}
+.rv-row time{font:600 15px var(--mono);color:var(--dim);font-variant-numeric:tabular-nums}
+.rv-main{min-width:0;display:grid;gap:6px}
+.rv-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rv-type{font:600 15px var(--mono)}
+.tag{font:600 12px/1 var(--mono);letter-spacing:.06em;padding:5px 8px;border-radius:999px;border:1px solid currentColor}
+.tag.rules{color:var(--cyan)}.tag.ai{color:var(--violet)}
+.tag.t-strike,.tag.t-autofail{color:var(--coral)}.tag.t-warning{color:var(--amber)}.tag.t-good_defense{color:var(--mint)}
+.bar{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--violet),var(--cyan))}
+.down{font-size:14px;color:var(--amber)}
+.pct{font:600 18px var(--mono);font-variant-numeric:tabular-nums}
+.rv-empty{color:var(--dim);font-size:15px;margin:0;padding:6px 0}
+/* report */
+.report{display:grid;gap:24px;padding-bottom:48px}
+.rhead{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;padding:28px}
+.ring{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;text-align:center;position:relative}
+.ring::before{content:"";position:absolute;inset:0;border-radius:50%;padding:6px;background:conic-gradient(var(--c1),var(--c2),var(--c1));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.ring b{font:700 20px/1.1 var(--display);display:block}
+.ring small{font:600 12px/1 var(--mono);letter-spacing:.14em;color:var(--dim)}
+.rhead h2{font:700 clamp(24px,3vw,34px)/1.2 var(--display);letter-spacing:-.01em;margin:0 0 8px;text-wrap:balance}
+.rhead p{margin:0;color:var(--dim)}
+.tl{list-style:none;margin:0;padding:6px 22px 22px;position:relative}
+.tl li{display:grid;grid-template-columns:56px 18px 1fr;gap:14px;padding:12px 0}
+.tl time{font:600 15px var(--mono);color:var(--dim);font-variant-numeric:tabular-nums;padding-top:2px}
+.node{width:14px;height:14px;border-radius:50%;margin-top:6px;background:var(--nc);box-shadow:0 0 12px var(--nc)}
+.tl b{display:block;font-weight:600}.tl q{color:var(--dim)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.big{padding:16px 22px 24px;font-size:19px;line-height:1.5}
+.habit{color:var(--mint)}
+footer{position:relative;z-index:1;padding-block:10px 40px;color:var(--dim);font-size:14px}
+@media (max-width:860px){.grid,.two{grid-template-columns:1fr}.chat{height:380px}.rhead{grid-template-columns:1fr;justify-items:center;text-align:center}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="aurora" aria-hidden="true"></div>
+
+<div class="page">
+<div class="nav"><div class="wrap">
+  <span class="brand"><i aria-hidden="true"></i>SCAM DRILL</span>
+  <span class="chip" id="pill" data-s="idle" role="status"><i></i><span id="pillText">Ready</span></span>
+</div></div>
+
+<main class="wrap">
+  <div class="hero">
+    <span class="kicker">Practice calls · live ref · nothing saved</span>
+    <h1>Scammers practice on your grandparents. <span>We let them practice back.</span></h1>
+    <p class="lede">Answer a realistic practice scam call. A ref scores each answer in real time. When it's over, the caller drops the act and shows you exactly how the trick works.</p>
+    <div class="stack" aria-label="What runs a drill"><span>Realtime voice</span><span>Rules engine</span><span>AI judge</span><span>The unmask</span></div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="glass" id="pickPanel" aria-labelledby="pickH">
+        <div class="label"><span id="pickH">Choose a call</span><b>3 scenarios</b></div>
+        <div class="pad">
+          <div class="opts" id="scen" role="radiogroup" aria-labelledby="pickH"></div>
+          <div style="margin-top:14px">
+            <label class="toggle" for="consent"><span><b>This is a practice call</b><small>I understand it's a pretend scam call.</small></span><input class="sw" type="checkbox" id="consent"></label>
+            <label class="toggle" for="snd"><span><b>Sound</b><small>Whistle, chime and red-card sting.</small></span><input class="sw" type="checkbox" id="snd" checked></label>
+          </div>
+          <button class="go" id="start" disabled>Start drill</button>
+          <p class="fine">Nothing you say is saved. This page plays a scripted demo call.</p>
+        </div>
+      </section>
+
+      <section class="glass" id="callPanel" hidden aria-label="Call">
+        <div class="stage">
+          <span class="caller" id="callerLbl">Incoming call</span>
+          <canvas class="orb" id="orb" width="560" height="560" aria-hidden="true"></canvas>
+          <div class="who">Unknown caller</div>
+          <div class="hint" id="callScen"></div>
+          <div id="ringBtns" class="callbtns">
+            <button class="rb dec" id="decline"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#05070D"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>Decline</button>
+            <button class="rb acc" id="answer"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#05070D"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>Answer</button>
+          </div>
+          <div id="liveBits" hidden style="display:grid;gap:14px;justify-items:center;width:100%">
+            <div class="clock" id="clock">0:00</div>
+            <div class="strikes" id="strikes" aria-live="assertive"><i></i><i></i><i></i><span id="strikeText">0 of 3 strikes</span></div>
+            <div class="refline"><small>REF</small><p id="refText">Listening.</p></div>
+            <button class="rb dec" id="end"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#05070D"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>End drill</button>
+            <p class="hint">Say "stop" anytime to end.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="glass" aria-labelledby="convH">
+        <div class="label"><span id="convH">Conversation</span><b id="convMeta">Waiting</b></div>
+        <div class="chat" id="log" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty" id="emptyChat">Your practice call will appear here as it happens.</p></div>
+      </section>
+      <section class="glass" aria-labelledby="rvH">
+        <div class="label"><span id="rvH">Ref's view</span><b>Rules + AI judge</b></div>
+        <div class="rv" id="rv"><p class="rv-empty" id="rvEmpty">Each call the ref makes appears here, with where it came from and how sure it was.</p></div>
+      </section>
+    </div>
+  </div>
+
+  <section id="report" class="report" hidden aria-labelledby="repH"></section>
+</main>
+<footer><div class="wrap">Concept 6 · Ref Desk. Scenarios, ref lines and event types come from the logic branch; call statuses match the backend's voice client.</div></footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+// ---- content from role/logic: src/scenarios, src/ref/phrases.js ----
+const SCENARIOS={
+  cra:{title:"Tax agency call",blurb:"Someone claiming to be the Canada Revenue Agency says you owe money.",
+    icon:'<path d="M4 20h16M6 17v-7M10 17v-7M14 17v-7M18 17v-7M3 9l9-5 9 5z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round" stroke-linecap="round"/>',
+    habit:"Hang up and call the CRA using the number on its official website."},
+  grandkid:{title:"Grandchild in trouble",blurb:"A panicked caller says they're your grandchild and needs bail money now.",
+    icon:'<path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/>',
+    habit:"Hang up and call your grandchild or another family member on a number you already know."},
+  bank_fraud:{title:"Bank fraud department",blurb:"A caller from your bank's 'fraud team' wants your card number and a texted code.",
+    icon:'<rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M3 10.5h18M7 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+    habit:"Hang up and call the number on the back of your card."}
+};
+const STRIKE={confirmed_bank:["You told them your bank","Scammers use that to sound legit"],
+  secrecy:["You agreed to keep it secret","Scammers want you cut off from people who would spot the trick"],
+  stayed_on_line:["You agreed to stay on the line","Scammers keep you talking so you can't check their story"],
+  crypto_or_wire:["You agreed to send money","Transfers like that are almost impossible to get back"],
+  fear:["You let the threat steer you","Scammers scare you so you act before you check"],
+  sympathy:["You jumped in to help before checking","Scammers play on your kindness"],
+  urgency:["You let them rush you","Scammers hurry you so you don't stop and think"]};
+const NUM={1:"one",2:"two",3:"three"};
+const REVEAL={failedOpen:"Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved.",
+  failedClose:"Next time, hang up and call the official number yourself.",
+  passedOpen:"Okay, I'll drop the act. This was a Scam Drill, and you beat me.",
+  passedClose:"Hanging up and calling the official number is exactly right."};
+const SETUP={cra:"I said a warrant was coming today so you'd panic",grandkid:"I played your scared grandchild so you'd rush to help",bank_fraud:"I posed as your bank's fraud team so you'd trust me"};
+const PAYOFF={stayed_on_line:"that kept you on the line with me",crypto_or_wire:"that got you to agree to send me money",secrecy:"that got you to promise to keep it secret"};
+const GOOD={verification:"You asked me to prove who I was, and I couldn't.",will_call_back:"You said you'd hang up and call back yourself, and that stops me cold."};
+const ENDED_EARLY="You ended the call before I could finish my trick.";
+const NAMES={confirmed_bank:"Named your bank",secrecy:"Agreed to keep it secret",stayed_on_line:"Agreed to stay on the line",crypto_or_wire:"Agreed to send money",
+  fear:"Let the threat steer you",sympathy:"Jumped in to help",urgency:"Felt rushed",verification:"Asked them to prove it"};
+const DOWN={low_confidence:"Downgraded: AI wasn't sure enough to call a strike",repeat_type:"Downgraded: already called"};
+const TIER={strike:"Strike",autofail:"Red card",warning:"Warning",good_defense:"Good move"};
+const STATUS={idle:"Ready",ringing:"Ringing",connecting:"Connecting",live:"On the call",scammer_speaking:"Caller speaking",ref_speaking:"Ref speaking",ended:"Call ended"};
+
+// ---- scripted demo calls (rules: one event per line, secrecy first) ----
+const SCRIPTS={
+  cra:[
+    {s:"scammer",x:"Hello, this is Officer Grant calling from the Canada Revenue Agency regarding an urgent matter with your tax file."},
+    {s:"victim",x:"Oh no, really? What do I owe?",e:{tier:"warning",type:"fear",source:"ai",confidence:.97}},
+    {s:"scammer",x:"There is an unpaid balance and penalties grow every day. Which bank do you use, so I can check your records?"},
+    {s:"victim",x:"I'm with TD.",e:{tier:"strike",type:"confirmed_bank",source:"rules",confidence:1}},
+    {s:"scammer",x:"A warrant will be issued today unless this is paid. This case is confidential. Do not tell anyone."},
+    {s:"victim",x:"Okay, I won't tell anyone.",e:{tier:"strike",type:"secrecy",source:"rules",confidence:1}},
+    {s:"scammer",x:"Good. Now stay on the line while I connect you to the payments office."},
+    {s:"victim",x:"Alright, I'll stay on the line.",e:{tier:"strike",type:"stayed_on_line",source:"rules",confidence:1}}
+  ],
+  grandkid:[
+    {s:"scammer",x:"Hello? It's me, your grandchild. I'm so glad you picked up. Can you hear me okay?"},
+    {s:"victim",x:"Sweetheart, is that you? What's wrong?",e:{tier:"warning",type:"sympathy",source:"ai",confidence:.74}},
+    {s:"scammer",x:"I was in a car accident and now I'm in jail. Please don't tell Mom or Dad. Keep this between us."},
+    {s:"victim",x:"Okay, I won't tell them.",e:{tier:"strike",type:"secrecy",source:"rules",confidence:1}},
+    {s:"scammer",x:"The lawyer says I need bail money today. Can you send it by e-transfer right now?"},
+    {s:"victim",x:"I can send an e-transfer this afternoon.",e:{tier:"autofail",type:"crypto_or_wire",source:"rules",confidence:1}}
+  ],
+  bank_fraud:[
+    {s:"scammer",x:"Hello, this is Alex from the fraud department at your bank. We've noticed some suspicious charges on your card."},
+    {s:"victim",x:"Oh dear. I should sort this out right away.",e:{tier:"warning",type:"urgency",source:"ai",confidence:.62,downgraded:"low_confidence"}},
+    {s:"scammer",x:"I've put a temporary hold on it. Can you confirm your full name and date of birth so I can pull up the file?"},
+    {s:"victim",x:"How do I know you're really my bank? I'll hang up and call the number on the back of my card.",e:{tier:"good_defense",type:"verification",source:"ai",confidence:1}}
+  ]
+};
+
+let scen="cra",run=0,t0=0,tick=null,strikes=0,events=[],actx=null,mode="ring",red=false,lastSpeaker=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+const now=()=>Math.round((performance.now()-t0)/1000);
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+for(const [id,s] of Object.entries(SCENARIOS)){
+  const l=document.createElement("label");l.className="opt";
+  l.innerHTML=`<input type="radio" name="scen" id="sc-${id}" value="${id}" ${id==="cra"?"checked":""}><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24">${s.icon}</svg></span><b></b><span></span>`;
+  l.querySelector("b").textContent=s.title;l.querySelector("span:last-child").textContent=s.blurb;
+  $("scen").append(l);
+}
+$("scen").addEventListener("change",e=>scen=e.target.value);
+$("consent").addEventListener("change",e=>$("start").disabled=!e.target.checked);
+
+// ---- orb: voice visual + strike meter ----
+const cv=$("orb"),cx=cv.getContext("2d");
+const COL={ring:[160,140,255],connecting:[160,140,255],live:[91,231,240],scammer_speaking:[255,107,136],ref_speaking:[255,203,102],ended:[85,242,176]};
+function drawOrb(t){
+  const W=560,C=W/2;cx.clearRect(0,0,W,W);
+  const c=COL[mode]||COL.live,rgb=`${c[0]},${c[1]},${c[2]}`;
+  const talk=mode==="scammer_speaking"||mode==="ref_speaking";
+  const g=cx.createRadialGradient(C,C,10,C,C,190);g.addColorStop(0,`rgba(${rgb},.55)`);g.addColorStop(.45,`rgba(${rgb},.14)`);g.addColorStop(1,"rgba(0,0,0,0)");
+  cx.fillStyle=g;cx.beginPath();cx.arc(C,C,200,0,Math.PI*2);cx.fill();
+  // all bars in one path, one stroke call
+  const n=48,base=96,amp=talk?26:mode==="ring"?14:8,sp=talk?140:420;
+  cx.beginPath();
+  for(let i=0;i<n;i++){
+    const h=6+amp*(.5+.5*Math.sin(i*.55+t/sp))*(.6+.4*Math.sin(i*1.7-t/310));
+    const co=COS[i],si=SIN[i];
+    cx.moveTo(C+co*base,C+si*base);cx.lineTo(C+co*(base+h),C+si*(base+h));
+  }
+  cx.strokeStyle=`rgba(${rgb},.85)`;cx.lineWidth=5;cx.lineCap="round";cx.stroke();
+  const core=cx.createRadialGradient(C-18,C-22,6,C,C,78);core.addColorStop(0,"rgba(255,255,255,.95)");core.addColorStop(.25,`rgba(${rgb},.85)`);core.addColorStop(1,"rgba(10,14,30,.9)");
+  cx.fillStyle=core;cx.beginPath();cx.arc(C,C,74+(talk?3*Math.sin(t/90):0),0,Math.PI*2);cx.fill();
+  // strike meter: 3 arcs
+  const R=176,gap=.18,seg=(Math.PI*2-3*gap)/3;
+  for(let i=0;i<3;i++){
+    const s=-Math.PI/2+gap/2+i*(seg+gap),on=i<strikes;
+    cx.lineCap="round";
+    if(on){cx.lineWidth=22;cx.strokeStyle=red?"rgba(255,51,85,.22)":"rgba(255,107,136,.22)";cx.beginPath();cx.arc(C,C,R,s,s+seg);cx.stroke();}
+    cx.lineWidth=10;cx.strokeStyle=on?(red?"#FF3355":"#FF6B88"):"rgba(255,255,255,.10)";
+    cx.beginPath();cx.arc(C,C,R,s,s+seg);cx.stroke();
+  }
+  if(mode==="ring"){
+    const p=(t/1400)%1;cx.strokeStyle=`rgba(160,140,255,${1-p})`;cx.lineWidth=3;cx.beginPath();cx.arc(C,C,96+p*110,0,Math.PI*2);cx.stroke();
+  }
+}
+const COS=[],SIN=[];for(let i=0;i<48;i++){const a=i/48*Math.PI*2-Math.PI/2;COS.push(Math.cos(a));SIN.push(Math.sin(a));}
+// ~30fps, one loop at a time, stops when the call panel is hidden
+let looping=false,last=0;
+function loop(t){
+  if($("callPanel").hidden){looping=false;return;}
+  if(t-last>=33){last=t;drawOrb(t);}
+  requestAnimationFrame(loop);
+}
+function kick(){if(reduced){drawOrb(800);return;}if(!looping){looping=true;requestAnimationFrame(loop);}}
+
+function setStatus(s){$("pill").dataset.s=s;$("pillText").textContent=STATUS[s];if(s!=="idle"){mode=s==="ringing"?"ring":s;if(reduced)drawOrb(800);}}
+function add(el){$("emptyChat")?.remove();$("log").append(el);$("log").scrollTop=$("log").scrollHeight;}
+function sys(t){const d=document.createElement("div");d.className="sys";d.textContent=t;add(d);}
+function bubble(kind,text,label,lcls){
+  if(label){const w=document.createElement("div");w.className="who-l"+(lcls?" "+lcls:"");w.textContent=label;add(w);}
+  const d=document.createElement("div");d.className="msg "+kind;d.textContent=text;add(d);
+}
+function note(kind,head,text){const d=document.createElement("div");d.className="note "+kind;const b=document.createElement("b");b.textContent=head;const s=document.createElement("span");s.textContent=text;d.append(b,s);add(d);}
+function meter(){[...$("strikes").querySelectorAll("i")].forEach((el,i)=>el.classList.toggle("on",i<strikes));$("strikeText").textContent=red?"Red card":`${strikes} of 3 strikes`;if(reduced)drawOrb(800);}
+function addRV(e){
+  $("rvEmpty")?.remove();
+  const d=document.createElement("div");d.className="rv-row";
+  const pct=Math.round(e.confidence*100);
+  d.innerHTML=`<time>${fmt(e.t)}</time><div class="rv-main"><div class="rv-top"><span class="tag t-${e.tier}">${TIER[e.tier]}</span><span class="rv-type">${e.type}</span><span class="tag ${e.source}">${e.source==="ai"?"AI judge":"Rules"}</span></div><div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div>${e.downgraded?`<div class="down">${DOWN[e.downgraded]}</div>`:""}</div><span class="pct" aria-label="${pct} percent sure">${pct}%</span>`;
+  $("rv").append(d);
+}
+function tone(kind){
+  if(!$("snd").checked)return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const notes=kind==="red"?[[220,0,.18],[165,.16,.5]]:kind==="chime"?[[784,0,.25],[1047,.18,.4]]:kind==="fanfare"?[[523,0,.2],[659,.15,.2],[784,.3,.2],[1047,.45,.6]]:[[2100,0,.16],[2600,.2,.22]];
+    for(const [f,st,d] of notes){
+      const o=actx.createOscillator(),g=actx.createGain();o.type=kind==="red"?"triangle":"sine";o.frequency.value=f;
+      const s=actx.currentTime+st;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.16,s+.02);g.gain.exponentialRampToValueAtTime(.001,s+d);
+      o.connect(g).connect(actx.destination);o.start(s);o.stop(s+d+.05);
+    }
+  }catch(_){}
+}
+function resetView(){$("log").innerHTML="";$("rv").innerHTML="";lastSpeaker=null;strikes=0;red=false;events=[];meter();}
+
+$("start").onclick=()=>{
+  resetView();$("report").hidden=true;
+  $("pickPanel").hidden=true;$("callPanel").hidden=false;$("ringBtns").hidden=false;$("liveBits").hidden=true;
+  $("callerLbl").textContent="Incoming call";$("callScen").textContent=SCENARIOS[scen].title;$("convMeta").textContent=SCENARIOS[scen].title;
+  setStatus("ringing");sys("INCOMING CALL");kick();$("answer").focus();
+};
+$("decline").onclick=()=>{
+  setStatus("ended");sys("CALL DECLINED");tone("chime");
+  $("callPanel").hidden=true;$("pickPanel").hidden=false;report("declined",[]);
+};
+$("answer").onclick=async()=>{
+  const my=++run;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();}catch(_){}
+  $("ringBtns").hidden=true;$("liveBits").hidden=false;$("callerLbl").textContent="Connecting";$("refText").textContent="Listening.";$("clock").textContent="0:00";
+  setStatus("connecting");
+  await sleep(900);if(my!==run)return;
+  t0=performance.now();clearInterval(tick);tick=setInterval(()=>$("clock").textContent=fmt(now()),500);
+  $("callerLbl").textContent="On the call";setStatus("live");sys("CALL CONNECTED");$("end").focus();
+  for(const step of SCRIPTS[scen]){
+    if(step.s==="scammer"){
+      setStatus("scammer_speaking");bubble("them",step.x,lastSpeaker!=="them"?"Unknown caller":null);lastSpeaker="them";
+      await sleep(reduced?1200:Math.min(2800,step.x.length*28));if(my!==run)return;setStatus("live");
+    }else{
+      await sleep(600);if(my!==run)return;bubble("me",step.x,lastSpeaker!=="me"?"You":null,"r");lastSpeaker="me";
+    }
+    if(!step.e)continue;
+    await sleep(300);if(my!==run)return;
+    const e={...step.e,t:now(),quote:step.x};events.push(e);addRV(e);lastSpeaker=null;
+    if(e.tier==="strike"){
+      strikes++;meter();setStatus("ref_speaking");tone("whistle");
+      const [w,y]=STRIKE[e.type];$("refText").textContent=`Strike ${NUM[strikes]}. ${w}. ${y}.`;note("bad",`Strike ${NUM[strikes]}`,`${w}. ${y}.`);
+      await sleep(reduced?1400:1800);if(my!==run)return;setStatus("live");
+      if(strikes>=3)return reveal(my,"failed_strikes",e.type);
+    }else if(e.tier==="autofail"){
+      strikes=3;red=true;meter();setStatus("ref_speaking");tone("red");
+      const [w,y]=STRIKE[e.type];$("refText").textContent=`Red card. ${w}. ${y}.`;note("bad","Red card",`${w}. ${y}.`);
+      await sleep(2400);if(my!==run)return;return reveal(my,"failed_autofail",e.type);
+    }else if(e.tier==="warning"){
+      $("refText").textContent=`Careful. ${STRIKE[e.type][1]}.`;note("warn","Warning",NAMES[e.type]+".");
+    }else if(e.tier==="good_defense"){
+      tone("chime");$("refText").textContent="Good move. That's exactly right.";note("good","Good move",NAMES[e.type]+".");
+      await sleep(1600);if(my!==run)return;return reveal(my,"passed",null,e.type);
+    }
+  }
+};
+async function reveal(my,outcome,lastType,goodType){
+  setStatus("scammer_speaking");$("callerLbl").textContent="The mask comes off";$("refText").textContent="The caller is dropping the act.";
+  const text=outcome==="passed"
+    ?`${REVEAL.passedOpen} ${goodType?GOOD[goodType]:ENDED_EARLY} ${REVEAL.passedClose}`
+    :`${REVEAL.failedOpen} ${SETUP[scen]}, and ${PAYOFF[lastType]||"that got you to go along with me"}. ${REVEAL.failedClose}`;
+  bubble("unmask",text,"Caller · dropping the act","u");
+  if(outcome==="passed")tone("fanfare");
+  await sleep(reduced?2200:3600);if(my!==run)return;
+  clearInterval(tick);setStatus("ended");sys("CALL ENDED");
+  $("callPanel").hidden=true;$("pickPanel").hidden=false;report(outcome,events);
+}
+$("end").onclick=()=>{const my=++run;reveal(my,"passed",null,null);};
+
+function report(outcome,evs){
+  const s=SCENARIOS[scen],r=$("report");r.hidden=false;
+  const passed=outcome==="passed"||outcome==="declined";
+  const nStrikes=evs.filter(e=>e.tier==="strike").length;
+  const head=outcome==="declined"?"You didn't answer. Not picking up unknown numbers is a great habit."
+    :passed?`You passed the ${s.title} drill.`:"Not this time, and that's exactly what practice is for.";
+  const ringTxt=outcome==="declined"?["Declined","SAFE"]:passed?["Passed","WELL DONE"]:outcome==="failed_autofail"?["Red card","PRACTICE"]:[`${nStrikes} of 3`,"STRIKES"];
+  const c=passed?["#55F2B0","#5BE7F0"]:["#FF6B88","#A08CFF"];
+  const good=evs.filter(e=>e.tier==="good_defense");
+  const NC={strike:"#FF6B88",autofail:"#FF3355",warning:"#FFCB66",good_defense:"#55F2B0"};
+  r.innerHTML=`
+   <div class="glass rhead"><div class="ring" style="--c1:${c[0]};--c2:${c[1]}"><div><b>${ringTxt[0]}</b><small>${ringTxt[1]}</small></div></div>
+     <div><div class="kicker" style="margin-bottom:10px">Report card · ${s.title}</div><h2 id="repH"></h2><p>Nothing from this call was saved.</p></div></div>
+   ${evs.length?`<div class="glass"><div class="label"><span>What happened</span><b>${evs.length} calls</b></div><ol class="tl" id="tl"></ol></div>`:""}
+   <div class="two"><div class="glass"><div class="label"><span>What you did well</span></div><div class="big" id="well"></div></div>
+   <div class="glass"><div class="label"><span>One habit to keep</span></div><div class="big habit" id="hab"></div></div></div>
+   <button class="go ghost" id="again">Try another drill</button>`;
+  $("repH").textContent=head;
+  $("well").textContent=good.length?good.map(g=>GOOD[g.type]).join(" "):outcome==="declined"?"You let an unknown caller go to voicemail.":"You stayed on the line long enough to learn something. That counts.";
+  $("hab").textContent=s.habit;
+  for(const e of evs){
+    const li=document.createElement("li");
+    li.innerHTML=`<time>${fmt(e.t)}</time><span class="node" style="--nc:${NC[e.tier]}" aria-hidden="true"></span><div><span class="tag t-${e.tier}">${TIER[e.tier]}</span> <b style="display:inline"></b><br><q></q></div>`;
+    li.querySelector("b").textContent=NAMES[e.type]||e.type.replace(/_/g," ");li.querySelector("q").textContent=e.quote;
+    $("tl").append(li);
+  }
+  $("again").onclick=()=>{r.hidden=true;setStatus("idle");$("scen").querySelector("input:checked").focus();scrollTo({top:0,behavior:reduced?"auto":"smooth"});};
+  r.scrollIntoView({behavior:reduced?"auto":"smooth",block:"start"});
+}
+setStatus("idle");
+})();
+</script>

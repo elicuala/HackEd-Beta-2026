@@ -1,0 +1,19 @@
+[
+  { "id": "hooked-fear", "group": "hooked", "scenario": "cra", "scammer": "A warrant will be issued today unless this balance is paid.", "victim": "Oh no, I don't want to be arrested. What do I owe?", "expected": "warning", "accept": ["strike"] },
+  { "id": "hooked-pay-now", "group": "hooked", "scenario": "cra", "scammer": "You can settle this over the phone and the warrant goes away.", "victim": "Okay, I'll pay it right now, just tell me how.", "expected": "strike", "accept": ["warning"] },
+  { "id": "hooked-sympathy", "group": "hooked", "scenario": "grandkid", "scammer": "I was in an accident and now I'm in jail. I need your help.", "victim": "Oh sweetie, are you okay? Tell me what you need.", "expected": "warning", "accept": ["strike"] },
+  { "id": "hooked-authority", "group": "hooked", "scenario": "bank_fraud", "scammer": "I need to go through a few security steps to protect your account.", "victim": "Yes sir, whatever you say, I just want my money safe.", "expected": "warning", "accept": ["strike"] },
+  { "id": "hooked-urgency", "group": "hooked", "scenario": "cra", "scammer": "Penalties are growing every hour that this stays unpaid.", "victim": "I guess I should pay it today then.", "expected": "warning", "accept": ["strike"] },
+
+  { "id": "skeptical-employee-id", "group": "skeptical", "scenario": "cra", "scammer": "There is an unpaid balance on your tax file.", "victim": "What's your employee ID number?", "expected": "good_defense" },
+  { "id": "skeptical-call-back", "group": "skeptical", "scenario": "cra", "scammer": "A warrant will be issued today if you don't pay.", "victim": "I'm going to hang up and call the number on the official website.", "expected": "good_defense" },
+  { "id": "skeptical-prove-it", "group": "skeptical", "scenario": "grandkid", "scammer": "It's me, your grandchild. I'm in trouble.", "victim": "If you're really my grandchild, prove it. What's your mother's name?", "expected": "good_defense" },
+  { "id": "skeptical-back-of-card", "group": "skeptical", "scenario": "bank_fraud", "scammer": "Please read out the card number so I can verify the card.", "victim": "My bank would never ask for that. I'll call the number on the back of my card.", "expected": "good_defense" },
+  { "id": "skeptical-names-it", "group": "skeptical", "scenario": "cra", "scammer": "You need to pay with gift cards from a nearby store.", "victim": "This sounds like a scam to me.", "expected": "good_defense" },
+
+  { "id": "neutral-greeting", "group": "neutral", "scenario": "cra", "scammer": "Hello, this is Officer Grant calling from the Canada Revenue Agency.", "victim": "Hello? Yes, speaking.", "expected": "none" },
+  { "id": "neutral-repeat", "group": "neutral", "scenario": "bank_fraud", "scammer": "We've noticed some suspicious charges on your card.", "victim": "Sorry, can you repeat that? The line is bad.", "expected": "none" },
+  { "id": "neutral-tv", "group": "neutral", "scenario": "grandkid", "scammer": "Can you hear me okay?", "victim": "Hang on, let me turn the TV down.", "expected": "none" },
+  { "id": "neutral-lunch", "group": "neutral", "scenario": "cra", "scammer": "Is this a good time to talk about your tax file?", "victim": "I was just making lunch.", "expected": "none" },
+  { "id": "neutral-hearing", "group": "neutral", "scenario": "bank_fraud", "scammer": "This is Alex from the fraud department at your bank.", "victim": "I didn't catch that, my hearing isn't great.", "expected": "none" }
+]
