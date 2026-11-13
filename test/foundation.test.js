@@ -110,6 +110,16 @@ test("pipeline: stop phrase ends with passed; history is redacted; rules get raw
   assert.equal(r.state.outcome, "passed");
 });
 
+test("pipeline: rules events carry the turn time", async () => {
+  const ctx = {
+    checkRules: () => [rule("strike", "confirmed_bank", "TD")], // t defaults to 0
+    judgeTurn: async () => [],
+    scenario: { red_flag_phrases: [] },
+  };
+  const r = await onTurn(fresh(), { speaker: "victim", text: "I'm with TD", t: 14 }, ctx);
+  assert.equal(r.actions[0].event.t, 14);
+});
+
 test("pipeline: red flag timer and judge errors are swallowed", async () => {
   let secs = null;
   const ctx = {

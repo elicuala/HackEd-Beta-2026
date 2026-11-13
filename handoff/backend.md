@@ -2,7 +2,7 @@
 
 <!-- If you need a foundation change, put a CHANGE REQUEST block here first (SPEC.md §4). -->
 
-## CHANGE REQUEST (small, non-blocking)
+## CHANGE REQUEST (small, non-blocking): APPLIED on main in the merge-fixes commit
 File: scripts/check-ownership.js
 Change: use `git status --porcelain -uall` instead of `git status --porcelain`.
 Why: without `-uall`, git collapses a brand-new untracked folder into one line (`public/`). The check then blames the folder's owner (frontend) for Agent B's `public/js/voice-client.js` until that file is committed. The workaround is to commit first, then run the check.

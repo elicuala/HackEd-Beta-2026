@@ -30,7 +30,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exit(2);
   }
   const committed = execSync(`git diff --name-only ${base}...HEAD`, { encoding: "utf8" });
-  const uncommitted = execSync("git status --porcelain", { encoding: "utf8" })
+  const uncommitted = execSync("git status --porcelain -uall", { encoding: "utf8" })
     .split("\n")
     .map((l) => l.slice(3).trim())
     .filter(Boolean);

@@ -47,11 +47,13 @@ export async function onTurn(state, turn, ctx) {
       lastScammerLine: s.lastScammerLine,
       secondsSinceRedFlag: s.redFlagAt === null ? 0 : turn.t - s.redFlagAt,
       alreadyStruck: new Set(s.struck),
+      t: turn.t,
     });
   } catch {
     ruleEvents = [];
   }
-  apply(ruleEvents);
+  // Rules events always carry the turn's time (the report timeline and replay order by t).
+  apply((Array.isArray(ruleEvents) ? ruleEvents : []).map((e) => ({ ...e, t: turn.t })));
   if (s.status !== "live") return { state: s, actions };
 
   let aiEvents = [];

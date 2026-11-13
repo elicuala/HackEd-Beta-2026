@@ -18,6 +18,7 @@
     ],
     "frontend": [
       "public/",
+      "design-concepts/",
       "handoff/frontend.md"
     ],
     "backend": [
