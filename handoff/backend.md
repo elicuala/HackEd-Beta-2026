@@ -9,7 +9,9 @@ Why: without `-uall`, git collapses a brand-new untracked folder into one line (
 Affects: all roles (any role adding the first file in a new folder).
 
 ## Status
-**Part 1 (browser voice): code complete and unit-tested. It still needs the live test with a real key, a mic, and headphones (see the checklist).** Part 2 (phone) is not started: waiting for the sync 2 go.
+- **Part 1 (browser voice):** code complete and tested (unit tests, plus an end-to-end run in headless Chrome). It still needs the live test with a real key, a mic, and headphones (see the checklist).
+- **Part 2 (phone):** code complete and unit-tested with Twilio and OpenAI faked. It still needs a live test with Twilio keys and ngrok.
+- **Live board (`src/live/`):** done and tested (SPEC §5.11).
 
 ## Plan (written before coding)
 
@@ -44,14 +46,33 @@ Session config: `semantic_vad` would interrupt seniors less but adds latency. I'
 - **Errors:** `MIC_DENIED`, `SESSION_FAILED`, `CONNECTION_LOST`, and `UPSTREAM_ERROR`, sent through `onError`. `start()` also rejects with the same object, so callers should catch it.
 - An optional, non-contract `onDebug(event)` handler feeds the dev page's latency meter. A second, optional `deps` argument injects fakes for tests.
 
-### Not doing yet
-- Part 2 (phone) until the sync 2 go.
 
 ## What I built
 - `src/voice/config.js`, `secret.js`, `validate.js`, and `routes.js`: the three endpoints from SPEC §5.5, plus `GET /dev/voice`. Malformed JSON on `/api/voice/*` returns 400 `BAD_REQUEST` (it used to fall through to a generic `INTERNAL`).
 - `public/js/voice-client.js`: SPEC §5.7 in full, including `unmask()` and `"scammer_speaking"`.
 - `src/voice/dev.html`: the test page with a latency meter.
 - `src/voice/voice.test.js`: 18 tests. The routes run with OpenAI mocked, and the client runs against fake WebRTC (start, turn ordering and redaction, ref speaking, pause/resume, the reveal → unmask → ended flow, the unmask fallback, the reveal timeout, mic denied, upstream 502, and a dropped connection). No network.
+
+## Part 2 and the live board (built after the first merge)
+- **`src/phone/`:**
+  - `config.js`: env, masked numbers, the stream URL.
+  - `mulaw.js`: G.711 μ-law encoder and the ref's sounds as phone tones.
+  - `bridge.js`: one Twilio Media Stream ↔ one OpenAI Realtime WebSocket. The session runs in `audio/pcmu` both ways, so there's no conversion. Finished transcripts go to `processTurn`. Barge-in clears Twilio's buffer.
+    - A strike plays the whistle tone, then the ref speaks out of band (`conversation: "none"`, so the scammer's context stays clean). Caller audio is held while the ref talks.
+    - A reveal plays its tone, then the unmask in the scammer's voice, then Twilio hangs up.
+    - If the caller hangs up, `endCall` runs (→ `passed`).
+  - `routes.js`: `GET /api/phone/numbers`, `POST /api/phone/start`, `POST /twilio/voice` (signature-checked), and `attach()` for `WS /twilio/stream`. Only calls this server placed can open a stream, once each, and only with a matching CallSid.
+- **`src/live/`:**
+  - `board.js`: an in-memory board fed by the core's bus, for opted-in calls only. Watchers get a random `watchId`, never the `callId`. Text goes through `redactSpeech`. A drill is listed once its first line is spoken (no ghost drills from failed connections), and drops off 15 minutes after it ends.
+  - `routes.js`: `GET /api/live` and `GET /api/live/stream`.
+- **Phone setup to test live:** fill the Twilio vars and `ALLOWED_NUMBERS` in `.env`, run `ngrok http 3000`, set `PUBLIC_URL` to the https ngrok URL, `npm run dev`, then open `/phone.html`.
+
+**Part 2 checklist**
+- [~] A verified phone rings, the scammer talks, a strike plays the whistle tone, and the ref speaks: the bridge is tested with fakes. Live test pending.
+- [~] A fake card number → red-card tone → the unmask → hang-up: tested with fakes. Live test pending.
+- [x] `/api/stream` shows live turns and actions during a call (the phone page uses it).
+- [x] Hanging up mid-call → `passed`, and both sockets close (tested).
+- [x] Unknown `numberId` → 403. Missing Twilio env → 503 `PHONE_DISABLED` (tested).
 
 ## How to use it
 ```bash

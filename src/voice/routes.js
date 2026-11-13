@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { createCall, processTurn, endCall, getCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
 import { mintClientSecret } from "./secret.js";
+import { shareCall } from "../live/board.js";
 import {
   sendError,
   httpError,
@@ -33,6 +34,8 @@ export default function register(app, deps = {}) {
       const scenario = getScenario(scenarioId); // 404 before we spend an upstream call
       const secret = await mint({ instructions: scenario.system_prompt });
       const { callId } = createCall({ scenarioId: scenario.id, channel: "browser" });
+      // Opt-in only: the person ticked "Show this drill on the live board".
+      const watchId = req.body.shareLive === true ? shareCall(callId) : null;
       res.set("Cache-Control", "no-store");
       res.json({
         callId,
@@ -40,6 +43,7 @@ export default function register(app, deps = {}) {
         model: secret.model,
         voice: secret.voice,
         openingLine: scenario.opening_line,
+        watchId,
       });
     } catch (err) {
       sendError(res, err);
