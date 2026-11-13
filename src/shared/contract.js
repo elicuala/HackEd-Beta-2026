@@ -32,6 +32,21 @@ export function redact(text) {
   return String(text ?? "").replace(/\d/g, "•");
 }
 
+// Spoken numbers: a run of 2+ number words ("four five one two", "double five nine"). A run can't
+// start with "oh" ("Oh, one more thing" stays readable). A lone number word ("one moment") is kept.
+const NUMBER_WORDS =
+  "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|" +
+  "sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|double|triple";
+const SPOKEN_RUN = new RegExp(`\\b(?:${NUMBER_WORDS})(?:[\\s,-]+(?:oh|${NUMBER_WORDS}))+\\b`, "gi");
+
+/**
+ * redact() plus spoken numbers. Use for anything shown to other people (transcripts, the live board):
+ * "my card is four five one two" → "my card is • • • •".
+ */
+export function redactSpeech(text) {
+  return redact(text).replace(SPOKEN_RUN, (run) => run.replace(/[a-z]+/gi, "•"));
+}
+
 /** Build a well-formed event. The quote is always redacted. */
 export function makeEvent({ tier, type, quote, source, confidence = 1, t = 0 }) {
   return {

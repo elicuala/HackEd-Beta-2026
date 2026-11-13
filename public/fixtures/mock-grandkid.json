@@ -1,0 +1,166 @@
+{
+  "scenarioId": "grandkid",
+  "steps": [
+    {
+      "delayMs": 700,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3030,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "Hello? It's me, your grandchild. I'm so glad you picked up. Can you hear me okay?",
+        "t": 2
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Sweetheart, is that you? What's wrong?",
+        "t": 6
+      }
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3200,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "I was in a car accident and now I'm in jail. Please don't tell Mom or Dad. Keep this between us.",
+        "t": 8
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Okay, I won't tell them.",
+        "t": 12
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "strike_called",
+          "event": {
+            "tier": "strike",
+            "type": "secrecy",
+            "quote": "Okay, I won't tell them.",
+            "source": "rules",
+            "confidence": 1,
+            "t": 12
+          },
+          "strikeNumber": 1,
+          "callId": "mock-call",
+          "ref": {
+            "say": "Strike one. You agreed to keep it secret. Scammers want you cut off from people who would spot the trick.",
+            "sound": "whistle"
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3030,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "The lawyer says I need bail money today. Can you send it by e-transfer right now?",
+        "t": 14
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Yes, I can send an e-transfer this afternoon.",
+        "t": 18
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "reveal",
+          "outcome": "failed_autofail",
+          "events": [
+            {
+              "tier": "strike",
+              "type": "secrecy",
+              "quote": "Okay, I won't tell them.",
+              "source": "rules",
+              "confidence": 1,
+              "t": 12
+            },
+            {
+              "tier": "autofail",
+              "type": "crypto_or_wire",
+              "quote": "Yes, I can send an e-transfer this afternoon.",
+              "source": "rules",
+              "confidence": 1,
+              "t": 18
+            }
+          ],
+          "callId": "mock-call",
+          "scenarioId": "grandkid",
+          "scenarioTitle": "Grandchild in trouble",
+          "endedAt": "2026-11-13T21:02:18.251Z",
+          "ref": {
+            "say": "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I played your scared grandchild so you'd rush to help, and that got you to agree to send me money. Next time, hang up and call the official number yourself.",
+            "sound": "red_card"
+          }
+        }
+      ]
+    }
+  ],
+  "endReveal": {
+    "type": "reveal",
+    "outcome": "passed",
+    "events": [],
+    "callId": "mock-call",
+    "scenarioId": "grandkid",
+    "scenarioTitle": "Grandchild in trouble",
+    "endedAt": "2026-11-13T21:02:18.251Z",
+    "ref": {
+      "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
+      "sound": "fanfare"
+    }
+  }
+}

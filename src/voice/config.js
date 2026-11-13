@@ -19,14 +19,19 @@ export function voiceConfig() {
   };
 }
 
-/** The Realtime session the scammer runs in. Shared with the phone bridge later (with μ-law formats). */
-export function realtimeSession({ instructions, model, voice, transcribeModel }) {
+/**
+ * The Realtime session the scammer runs in. The browser uses the default (WebRTC handles audio);
+ * the phone bridge passes audioFormat "audio/pcmu" (Twilio's native G.711 μ-law, no conversion).
+ */
+export function realtimeSession({ instructions, model, voice, transcribeModel, audioFormat = null }) {
+  const format = audioFormat ? { format: { type: audioFormat } } : {};
   return {
     type: "realtime",
     model,
     instructions,
     audio: {
       input: {
+        ...format,
         noise_reduction: { type: "near_field" },
         transcription: { model: transcribeModel, language: "en" },
         turn_detection: {
@@ -38,7 +43,7 @@ export function realtimeSession({ instructions, model, voice, transcribeModel })
           interrupt_response: true,
         },
       },
-      output: { voice },
+      output: { ...format, voice },
     },
   };
 }

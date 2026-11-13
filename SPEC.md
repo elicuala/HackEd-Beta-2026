@@ -1,8 +1,15 @@
 # Scam Drill: project specification
 
-**Version 1.1 · Hackathon build · 3 people, 3 Claude Code agents, working in parallel**
+**Version 1.2 · Hackathon build · 3 people, 3 Claude Code agents, working in parallel**
 
 > "Scammers practice on your grandparents every day. We let them practice back."
+
+**What changed in 1.2** (after the first merge):
+- **The live board (§5.11):** drills a person chooses to share stream live to anyone on the site (`/live.html`). Watchers get a separate `watchId`, never the `callId`.
+- **Opt-in sharing:** `POST /api/voice/session` and `POST /api/phone/start` take an optional `shareLive: true` and return `watchId`. The browser call is `VoiceClient.start(scenarioId, { shareLive })`.
+- **Spoken-number redaction (§5.10):** transcripts now hide spoken numbers ("four five one two" → "• • • •"), not just digits (`redactSpeech` in the contract).
+- **Rules events carry the turn time:** the logic team's change request.
+- **Built:** the full frontend (drill, report, phone, live board, demo mode, music), and phone drills (Part 2).
 
 **What changed in 1.1** (made before any role work started, so nobody has to rework anything):
 - **New §0 (how we win):** prize targets, a judging map, the Ref's view, the music plan, and the demo script. Also new: §10 (Devpost) and judging gates in §7.
@@ -11,7 +18,7 @@
 - **Downgrade reasons (§5.1, §5.2):** when the core turns a strike into a warning, it now tags the event with `downgraded`, so the Ref's view can show why.
 - **Decline (§1):** answering is now part of the drill. Declining the call is celebrated on the drill page, with no report card.
 - **Storage:** a frontend-only `scamDrill.music` key (§5.8).
-- The foundation code, fixtures, and tests are already updated (`npm test` passes 16 tests).
+- The foundation code, fixtures, and tests are already updated (`npm test` passes; 109 tests as of 1.2).
 
 ## 0. How we win (read this before building anything)
 
@@ -66,7 +73,9 @@ The drill flow is **incoming call (Answer or Decline) → live call → unmask �
 **Polish (after sync 2):** Agent F builds the visual design system, the incoming-call screen, motion, the Ref's view, and the music from §0.4. Agent B builds the unmask in the scammer's voice (§5.7).
 **Stretch (only if the browser drill works by hour 12):** a real phone call through Twilio, with a live strike dashboard. This is the strongest Complexity and Originality moment, so Agent B goes for it the moment sync 2 says go.
 
-**Out of scope:** user accounts, a database, storing recordings, scheduling drills, mobile apps, translations.
+**Pages:** `/` (the drill, with the incoming call, the Ref's view, and the report card), `/live.html` (the live board: anyone can watch shared drills as they happen), `/phone.html` (phone drills), `/report.html` (a printable report card). `?mock=1` plays a scripted demo call with no microphone or API key. `?judge=1` opens the Ref's view.
+
+**Out of scope:** user accounts (the live board is public and needs no login), a database, storing recordings, scheduling drills, mobile apps, translations.
 
 ## 2. Team
 
@@ -97,7 +106,8 @@ scam-drill/
 │   ├── scenarios/                                  Agent L
 │   ├── ref/                                        Agent L
 │   ├── voice/                                      Agent B
-│   └── phone/                                      Agent B
+│   ├── phone/                                      Agent B
+│   └── live/                                       Agent B   ← the live board
 ├── public/
 │   ├── js/voice-client.js                          Agent B   ← the only Backend file in public/
 │   └── everything else                             Agent F
@@ -107,7 +117,7 @@ scam-drill/
     └── logic.md                                    Agent L
 ```
 
-**The foundation is already written and tested** (`npm test` passes 16 tests). It includes working placeholders ("stubs") in `src/rules`, `src/judge`, `src/scenarios`, and `src/ref`, so the whole app runs from minute one. Agent L replaces those stubs. Nobody else touches them.
+**The foundation is already written and tested** (`npm test` passes; 109 tests as of 1.2). It includes working placeholders ("stubs") in `src/rules`, `src/judge`, `src/scenarios`, and `src/ref`, so the whole app runs from minute one. Agent L replaces those stubs. Nobody else touches them.
 
 ## 4. Locked foundation and change requests
 
@@ -206,15 +216,17 @@ All JSON. Errors are always `{ "error": { "code": "UPPER_SNAKE", "message": "...
 | `GET /api/health` | foundation | | `{ ok: true }` |
 | `GET /api/scenarios` | L | | `[{ id, title, blurb }]` |
 | `GET /api/stream?callId=` | foundation | | SSE, see 5.6 |
-| `POST /api/voice/session` | B | `{ scenarioId }` | `{ callId, clientSecret, model, voice, openingLine }` |
+| `POST /api/voice/session` | B | `{ scenarioId, shareLive? }` | `{ callId, clientSecret, model, voice, openingLine, watchId }` (`watchId` is null unless shared) |
 | `POST /api/voice/turn` | B | `{ callId, turn: Turn }` | `{ actions: WireAction[] }` |
 | `POST /api/voice/end` | B | `{ callId }` | `{ actions: WireAction[] }` |
 | `GET /api/phone/numbers` | B | | `[{ id: "n1", label: "•••• 1234" }]` (never the full number) |
-| `POST /api/phone/start` | B | `{ numberId, scenarioId }` | `{ callId }` |
+| `POST /api/phone/start` | B | `{ numberId, scenarioId, shareLive? }` | `{ callId, watchId }` |
 | `POST /twilio/voice` | B | Twilio webhook | TwiML |
-| `WS /twilio/stream` | B | Twilio Media Stream | |
+| `WS /twilio/stream` | B | Twilio Media Stream (only for calls this server placed) | |
+| `GET /api/live` | B | | `[{ watchId, title, scenarioId, channel, status, outcome, strikes, startedAt, endedAt, lines, lastLine }]`, newest first |
+| `GET /api/live/stream?watchId=` | B | | SSE, see 5.11 |
 
-Error codes in use: `SCENARIO_NOT_FOUND` (404), `CALL_NOT_FOUND` (404), `BAD_REQUEST` (400), `NUMBER_NOT_ALLOWED` (403), `PHONE_DISABLED` (503, Twilio env vars missing), `UPSTREAM_ERROR` (502, OpenAI or Twilio failed).
+Error codes in use: `DRILL_NOT_FOUND` (404, live board), `SCENARIO_NOT_FOUND` (404), `CALL_NOT_FOUND` (404), `BAD_REQUEST` (400), `NUMBER_NOT_ALLOWED` (403), `PHONE_DISABLED` (503, Twilio env vars missing), `UPSTREAM_ERROR` (502, OpenAI or Twilio failed).
 
 ### 5.6 Server-Sent Events: `GET /api/stream?callId=`
 
@@ -241,7 +253,7 @@ handlers = {
 }
 
 VoiceClient = {
-  start(scenarioId)  → Promise<{ callId }>   // MUST be called inside a click handler (mic and audio permission)
+  start(scenarioId, { shareLive? }) → Promise<{ callId, watchId }>  // MUST be called inside a click handler
   pauseScammer()     → void                  // mute scammer audio, stop it responding
   resumeScammer()    → void
   setRefSpeaking(on) → void                  // while true, the victim's mic transcripts are dropped (not sent to the server)
@@ -271,10 +283,23 @@ See `.env.example`. Agents read them through `process.env` only. Server code mus
 
 ### 5.10 Privacy (non-negotiable, every role)
 
-- Every `quote` and every logged string is redacted (no digits).
+- Every `quote` and every logged string is redacted (no digits). Anything shown to other people (transcripts, the live board) also hides spoken numbers (`redactSpeech`).
 - Never write audio, raw transcripts, or keys to disk or logs.
 - The browser never sees `OPENAI_API_KEY` or Twilio credentials. It only gets a short-lived `clientSecret`.
 - Phone drills only call numbers in `ALLOWED_NUMBERS`, and the browser only ever sees masked labels.
+- The live board is **opt-in per drill** ("Show on the live board", on by default with a clear label). Watchers never get the `callId`, which can drive or end a call. Drills drop off the board 15 minutes after they end, and nothing is written to disk.
+
+### 5.11 Live board: `GET /api/live/stream?watchId=`
+
+```
+event: snapshot  data: { watchId, title, channel, status, outcome, strikes, ..., items: Item[] }
+event: item      data: Item
+event: status    data: { status: "live" | "reveal", outcome }
+event: gone      data: {}        // the drill left the board
+Item = { kind: "turn", speaker, text (redactSpeech), t }
+     | { kind: "action", type, strikeNumber, outcome, say, sound, event: { tier, type, quote, source, confidence, downgraded, t } | null }
+```
+A shared drill is **listed** once its first line is spoken, so a call that never connected doesn't show up as a ghost. Its `watchId` link works from the start. Unknown `watchId` → 404 `DRILL_NOT_FOUND`.
 
 ## 6. Git workflow
 

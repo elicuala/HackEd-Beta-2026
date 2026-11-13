@@ -3,6 +3,7 @@
 //
 // createVoiceClient(handlers, deps?)
 //   handlers: { onStatus, onTurn, onActions, onError, onDebug? }   (onDebug is optional, used by /dev/voice)
+//   start(scenarioId, { shareLive? }) → { callId, watchId }   (shareLive puts the drill on the live board)
 //   deps:     test seam only; production code passes nothing.
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
@@ -73,6 +74,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   let endedByUser = false;
   let unmaskWaiter = null; // { responseId, started, resolve }
   const responseKinds = new Map(); // response_id → "opening" | "unmask" | "reply"
+  const cleanups = []; // timers to clear when the client finishes
 
   function setStatus(s) {
     if (s === status) return;
@@ -120,6 +122,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     if (phase === "ended") return;
     phase = "ended";
     clearTimeout(revealTimer);
+    for (const fn of cleanups.splice(0)) fn();
     stopMic();
     try {
       dc?.close();
@@ -299,7 +302,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
 
   // ---------- public API ----------
 
-  async function start(scenarioId) {
+  async function start(scenarioId, options = {}) {
     if (phase !== "idle") {
       const err = voiceError("SESSION_FAILED");
       call("onError", err);
@@ -320,7 +323,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       if (!env.RTCPeerConnection) throw Object.assign(new Error("no webrtc"), { code: "SESSION_FAILED" });
 
       // Session and mic in parallel: saves a round trip before the scammer can speak.
-      const sessionP = api("/api/voice/session", { scenarioId }).catch((e) => {
+      const sessionP = api("/api/voice/session", { scenarioId, shareLive: options.shareLive === true }).catch((e) => {
         throw Object.assign(e, { code: e.code === "UPSTREAM_ERROR" ? "UPSTREAM_ERROR" : "SESSION_FAILED" });
       });
       const micP = env.getUserMedia(MIC_CONSTRAINTS).then(
@@ -361,13 +364,17 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       dc.onclose = () => {
         if (phase === "live") fail("CONNECTION_LOST");
       };
+      let dcTimer = null;
       const opened = new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(Object.assign(new Error("dc"), { code: "SESSION_FAILED" })), env.dcOpenTimeoutMs);
+        dcTimer = setTimeout(() => reject(Object.assign(new Error("dc"), { code: "SESSION_FAILED" })), env.dcOpenTimeoutMs);
         dc.onopen = () => {
-          clearTimeout(timer);
+          clearTimeout(dcTimer);
           resolve();
         };
       });
+      // If an earlier step fails we never await `opened`: don't leave its timer to reject unhandled.
+      opened.catch(() => {});
+      cleanups.push(() => clearTimeout(dcTimer));
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -400,7 +407,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
             JSON.stringify(session.openingLine ?? ""),
         },
       });
-      return { callId };
+      return { callId, watchId: session.watchId ?? null };
     } catch (e) {
       if (phase === "ended") {
         // Already reported by fail(), or the user pressed End while connecting (not an error).

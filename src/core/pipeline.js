@@ -1,5 +1,5 @@
 // FOUNDATION: locked. Turns a finished line of speech into actions.
-import { redact, validateTurn, STOP_PHRASES } from "../shared/contract.js";
+import { redactSpeech, validateTurn, STOP_PHRASES } from "../shared/contract.js";
 import { handleEvent, endCall } from "./callState.js";
 
 const STOP_RE = new RegExp(`\\b(${STOP_PHRASES.join("|")})\\b`, "i");
@@ -15,7 +15,7 @@ export async function onTurn(state, turn, ctx) {
 
   let s = {
     ...state,
-    history: [...state.history, { speaker: turn.speaker, text: redact(turn.text), t: turn.t }],
+    history: [...state.history, { speaker: turn.speaker, text: redactSpeech(turn.text), t: turn.t }],
   };
 
   if (turn.speaker === "scammer") {

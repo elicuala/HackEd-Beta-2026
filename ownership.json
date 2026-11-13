@@ -24,6 +24,7 @@
     "backend": [
       "src/voice/",
       "src/phone/",
+      "src/live/",
       "public/js/voice-client.js",
       "handoff/backend.md"
     ],

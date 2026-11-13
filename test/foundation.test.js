@@ -3,7 +3,7 @@ import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  redact, makeEvent, validateEvent, validateTurn, sanitizeScript, SOUNDS,
+  redact, redactSpeech, makeEvent, validateEvent, validateTurn, sanitizeScript, SOUNDS,
 } from "../src/shared/contract.js";
 import { createCallState, handleEvent, endCall } from "../src/core/callState.js";
 import { onTurn } from "../src/core/pipeline.js";
@@ -66,6 +66,20 @@ test("core: downgraded warnings say why (for the Ref's view)", () => {
   r = handleEvent(r.state, ai("warning", "fear", 0.9));
   assert.equal("downgraded" in r.actions[0].event, false);
   assert.ok(!validateEvent({ ...rule("warning", "x"), downgraded: "nope" }).ok);
+});
+
+test("contract: redactSpeech hides digits and spoken number runs, keeps normal words", () => {
+  assert.equal(redactSpeech("card four five one two now"), "card • • • • now");
+  assert.equal(redactSpeech("It's 8 4 2 1, double five"), "It's • • • •, • •");
+  assert.equal(redactSpeech("Oh, one more thing"), "Oh, one more thing");
+  assert.equal(redactSpeech("One moment please, I have two cards"), "One moment please, I have two cards");
+  assert.equal(redactSpeech("four oh five"), "• • •");
+});
+
+test("pipeline: history hides spoken numbers too", async () => {
+  const ctx = { checkRules: () => [], judgeTurn: async () => [], scenario: { red_flag_phrases: [] } };
+  const r = await onTurn(fresh(), { speaker: "victim", text: "it is four five one two", t: 1 }, ctx);
+  assert.equal(r.state.history[0].text, "it is • • • •");
 });
 
 test("contract: sanitizeScript keeps known sounds and strips digits", () => {

@@ -1,0 +1,187 @@
+{
+  "scenarioId": "bank_fraud",
+  "steps": [
+    {
+      "delayMs": 700,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3200,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "Hello, this is Alex from the fraud department at your bank. We've noticed some suspicious charges on your card.",
+        "t": 2
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Oh dear. I should sort this out right away.",
+        "t": 6
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "warning_shown",
+          "event": {
+            "tier": "warning",
+            "type": "urgency",
+            "quote": "Oh dear. I should sort this out right away.",
+            "source": "ai",
+            "confidence": 0.7,
+            "t": 6
+          },
+          "callId": "mock-call",
+          "ref": {
+            "say": null,
+            "sound": null
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3200,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "I've put a temporary hold on it. Can you confirm your full name and date of birth so I can pull up the file?",
+        "t": 8
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "How do I know you're really my bank? I'll hang up and call the number on the back of my card.",
+        "t": 12
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "credit_shown",
+          "event": {
+            "tier": "good_defense",
+            "type": "verification",
+            "quote": "How do I know you're really my bank? I'll hang up and call the number on the back of my card.",
+            "source": "ai",
+            "confidence": 0.9,
+            "t": 12
+          },
+          "callId": "mock-call",
+          "ref": {
+            "say": null,
+            "sound": "chime"
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 2820,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "Ma'am, if you hang up the hold will lapse and the charges will go through.",
+        "t": 14
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Then I'll take that chance. Stop.",
+        "t": 18
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "reveal",
+          "outcome": "passed",
+          "events": [
+            {
+              "tier": "warning",
+              "type": "urgency",
+              "quote": "Oh dear. I should sort this out right away.",
+              "source": "ai",
+              "confidence": 0.7,
+              "t": 6
+            },
+            {
+              "tier": "good_defense",
+              "type": "verification",
+              "quote": "How do I know you're really my bank? I'll hang up and call the number on the back of my card.",
+              "source": "ai",
+              "confidence": 0.9,
+              "t": 12
+            }
+          ],
+          "callId": "mock-call",
+          "scenarioId": "bank_fraud",
+          "scenarioTitle": "Bank fraud department",
+          "endedAt": "2026-11-13T21:02:18.251Z",
+          "ref": {
+            "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right.",
+            "sound": "fanfare"
+          }
+        }
+      ]
+    }
+  ],
+  "endReveal": {
+    "type": "reveal",
+    "outcome": "passed",
+    "events": [],
+    "callId": "mock-call",
+    "scenarioId": "bank_fraud",
+    "scenarioTitle": "Bank fraud department",
+    "endedAt": "2026-11-13T21:02:18.252Z",
+    "ref": {
+      "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
+      "sound": "fanfare"
+    }
+  }
+}

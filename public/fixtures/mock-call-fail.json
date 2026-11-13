@@ -1,0 +1,255 @@
+{
+  "scenarioId": "cra",
+  "steps": [
+    {
+      "delayMs": 700,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3200,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "Hello, this is Officer Grant from the Canada Revenue Agency. There is an unpaid balance on your file.",
+        "t": 2
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Oh no, really? What do I owe?",
+        "t": 6
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "warning_shown",
+          "event": {
+            "tier": "warning",
+            "type": "fear",
+            "quote": "Oh no, really? What do I owe?",
+            "source": "ai",
+            "confidence": 0.7,
+            "t": 6
+          },
+          "callId": "mock-call",
+          "ref": {
+            "say": null,
+            "sound": null
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 2100,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "Which bank do you use so I can check your records?",
+        "t": 8
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "I'm with TD.",
+        "t": 12
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "strike_called",
+          "event": {
+            "tier": "strike",
+            "type": "confirmed_bank",
+            "quote": "I'm with TD.",
+            "source": "rules",
+            "confidence": 1,
+            "t": 12
+          },
+          "strikeNumber": 1,
+          "callId": "mock-call",
+          "ref": {
+            "say": "Strike one. You told them your bank. Scammers use that to sound legit.",
+            "sound": "whistle"
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 2730,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "A warrant will be issued today. Stay on the line and don't tell anyone.",
+        "t": 14
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Okay, I won't tell anyone. I'll stay on the line.",
+        "t": 18
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "strike_called",
+          "event": {
+            "tier": "strike",
+            "type": "secrecy",
+            "quote": "Okay, I won't tell anyone.",
+            "source": "rules",
+            "confidence": 1,
+            "t": 18
+          },
+          "strikeNumber": 2,
+          "callId": "mock-call",
+          "ref": {
+            "say": "Strike two. You agreed to keep it secret. Scammers want you cut off from people who would spot the trick.",
+            "sound": "whistle"
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 2310,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "You need to pay with gift cards. Read me the card number.",
+        "t": 20
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Okay, the card number is • • • • • • • •.",
+        "t": 24
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "reveal",
+          "outcome": "failed_autofail",
+          "events": [
+            {
+              "tier": "warning",
+              "type": "fear",
+              "quote": "Oh no, really? What do I owe?",
+              "source": "ai",
+              "confidence": 0.7,
+              "t": 6
+            },
+            {
+              "tier": "strike",
+              "type": "confirmed_bank",
+              "quote": "I'm with TD.",
+              "source": "rules",
+              "confidence": 1,
+              "t": 12
+            },
+            {
+              "tier": "strike",
+              "type": "secrecy",
+              "quote": "Okay, I won't tell anyone.",
+              "source": "rules",
+              "confidence": 1,
+              "t": 18
+            },
+            {
+              "tier": "autofail",
+              "type": "card_number",
+              "quote": "Okay, the card number is ••••••••.",
+              "source": "rules",
+              "confidence": 1,
+              "t": 24
+            }
+          ],
+          "callId": "mock-call",
+          "scenarioId": "cra",
+          "scenarioTitle": "Tax agency call",
+          "endedAt": "2026-11-13T21:02:18.249Z",
+          "ref": {
+            "say": "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself.",
+            "sound": "red_card"
+          }
+        }
+      ]
+    }
+  ],
+  "endReveal": {
+    "type": "reveal",
+    "outcome": "passed",
+    "events": [],
+    "callId": "mock-call",
+    "scenarioId": "cra",
+    "scenarioTitle": "Tax agency call",
+    "endedAt": "2026-11-13T21:02:18.249Z",
+    "ref": {
+      "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
+      "sound": "fanfare"
+    }
+  }
+}

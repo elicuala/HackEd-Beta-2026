@@ -1,0 +1,30 @@
+{
+  "type": "reveal",
+  "callId": "00000000-0000-4000-8000-000000000000",
+  "scenarioId": "cra",
+  "scenarioTitle": "Tax agency call",
+  "endedAt": "2026-11-14T18:00:00.000Z",
+  "ref": {
+    "say": "This was a Scam Drill. You're safe, and nothing you said was saved.",
+    "sound": "red_card"
+  },
+  "outcome": "failed_autofail",
+  "events": [
+    {
+      "tier": "strike",
+      "type": "confirmed_bank",
+      "quote": "I'm with TD.",
+      "source": "rules",
+      "confidence": 1,
+      "t": 14
+    },
+    {
+      "tier": "autofail",
+      "type": "card_number",
+      "quote": "Okay, the card number is ••••••••.",
+      "source": "rules",
+      "confidence": 1,
+      "t": 40
+    }
+  ]
+}
