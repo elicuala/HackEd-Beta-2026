@@ -428,7 +428,7 @@ input.text[aria-invalid="true"]{border-color:var(--red)}
 .field:last-child{border-bottom:0}
 .field small{color:var(--text-2);font-size:.8rem;line-height:1.35}
 .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:4px 0 16px;border-radius:980px;background:var(--fill)}
-.auth-tabs button{min-height:36px;border:0;border-radius:980px;background:transparent;color:var(--text-2);font-weight:500;cursor:pointer}
+.auth-tabs button{min-height:36px;border:0;border-radius:980px;background:transparent;color:var(--text);font-weight:500;cursor:pointer}
 .auth-tabs button[aria-selected="true"]{background:var(--card);color:var(--text);font-weight:600;box-shadow:var(--card-shadow)}
 .form.card{padding:4px 16px}
 .account-card{display:grid;gap:6px;padding:18px 16px}

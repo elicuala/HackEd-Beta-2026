@@ -14,7 +14,8 @@
       "scripts/",
       "test/",
       "src/shared/",
-      "src/core/"
+      "src/core/",
+      "data/"
     ],
     "frontend": [
       "public/",
@@ -25,6 +26,7 @@
       "src/voice/",
       "src/phone/",
       "src/live/",
+      "src/auth/",
       "public/js/voice-client.js",
       "handoff/backend.md"
     ],

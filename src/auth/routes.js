@@ -40,6 +40,12 @@ function sessionCookie(req, value, maxAgeSeconds) {
 /** A small in-memory limiter for sign-up and log-in attempts, per IP. */
 function createLimiter(now = () => Date.now()) {
   const hits = new Map();
+  // Forget IPs with no recent attempts, so the map can't grow without bound.
+  const sweep = setInterval(() => {
+    const t = now();
+    for (const [key, times] of hits) if (!times.some((at) => t - at < WINDOW_MS)) hits.delete(key);
+  }, WINDOW_MS);
+  sweep.unref?.();
   return (key) => {
     const t = now();
     const recent = (hits.get(key) ?? []).filter((at) => t - at < WINDOW_MS);
@@ -48,6 +54,14 @@ function createLimiter(now = () => Date.now()) {
     if (recent.length > MAX_ATTEMPTS)
       throw new AuthError("TOO_MANY_ATTEMPTS", 429, "Too many tries. Please wait a few minutes and try again.");
   };
+}
+
+/**
+ * Account POSTs must be JSON. A plain HTML form can't send JSON, so another site can't submit a hidden form
+ * that logs a visitor into an attacker's account (login CSRF) or logs them out.
+ */
+function requireJson(req) {
+  if (!req.is("application/json")) throw new AuthError("BAD_REQUEST", 400, "Please send this as JSON.");
 }
 
 const unavailable = () =>
@@ -72,16 +86,19 @@ export function registerAuth(app, getService) {
   };
 
   app.post("/api/auth/signup", async (req, res) => {
+    requireJson(req);
     limit(`signup:${req.ip}`);
     begin(req, res, await (await need()).signUp(req.body ?? {}));
   });
 
   app.post("/api/auth/login", async (req, res) => {
+    requireJson(req);
     limit(`login:${req.ip}`);
     begin(req, res, await (await need()).logIn(req.body ?? {}));
   });
 
   app.post("/api/auth/logout", async (req, res) => {
+    requireJson(req);
     (await getService())?.logOut(readCookie(req.headers.cookie, COOKIE));
     res.set("Set-Cookie", sessionCookie(req, "", 0));
     res.json({ ok: true });
@@ -91,6 +108,12 @@ export function registerAuth(app, getService) {
     const user = (await getService())?.userForToken(readCookie(req.headers.cookie, COOKIE)) ?? null;
     res.set("Cache-Control", "no-store");
     res.json({ user: user && { phone: user.phone } });
+  });
+
+  // Malformed JSON fails in express.json() before the handlers: answer 400 BAD_REQUEST without the parser's text.
+  app.use("/api/auth", (err, req, res, next) => {
+    if (err?.type !== "entity.parse.failed" && err?.type !== "entity.too.large") return next(err);
+    res.status(400).json({ error: { code: "BAD_REQUEST", message: "Please send valid JSON." } });
   });
 }
 

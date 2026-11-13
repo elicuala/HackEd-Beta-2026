@@ -20,7 +20,7 @@ function setMode(next) {
   const signup = mode === "signup";
   tabs.login.setAttribute("aria-selected", String(!signup));
   tabs.signup.setAttribute("aria-selected", String(signup));
-  form.setAttribute("aria-labelledby", signup ? "tabSignup" : "tabLogin");
+  $("authTabPanel").setAttribute("aria-labelledby", signup ? "tabSignup" : "tabLogin");
   $("phoneField").hidden = !signup;
   $("phone").required = signup;
   $("pwHint").hidden = !signup;
@@ -93,6 +93,8 @@ form.addEventListener("submit", async (e) => {
 $("logout").addEventListener("click", async () => {
   try {
     await auth.logOut();
+  } catch {
+    /* the cookie still expires; show logged out either way */
   } finally {
     setMode("login");
     render(null);

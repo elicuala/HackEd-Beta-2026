@@ -27,11 +27,12 @@
     <section id="authPanel" class="pane" hidden aria-labelledby="authH">
       <div class="section-head"><h2 class="section-title" id="authH">Your account</h2></div>
       <div class="auth-tabs" role="tablist" aria-label="Log in or sign up">
-        <button type="button" role="tab" id="tabLogin" aria-controls="authForm" aria-selected="true">Log in</button>
-        <button type="button" role="tab" id="tabSignup" aria-controls="authForm" aria-selected="false">Sign up</button>
+        <button type="button" role="tab" id="tabLogin" aria-controls="authTabPanel" aria-selected="true">Log in</button>
+        <button type="button" role="tab" id="tabSignup" aria-controls="authTabPanel" aria-selected="false">Sign up</button>
       </div>
 
-      <form id="authForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
+      <div id="authTabPanel" role="tabpanel" aria-labelledby="tabLogin">
+      <form id="authForm" novalidate>
         <div class="card form">
           <div class="field"><label for="email">Email</label>
             <input class="text" id="email" name="email" type="email" autocomplete="email" required></div>
@@ -45,6 +46,7 @@
         <div id="errorBox" class="notice" role="alert" hidden><p id="errorText"></p></div>
         <button class="go" id="submit" type="submit">Log in</button>
       </form>
+      </div>
       <p class="fine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Your email and password are stored only as secure hashes, never as you typed them.</span></p>
     </section>
 

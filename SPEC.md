@@ -4,6 +4,9 @@
 
 > "Scammers practice on your grandparents every day. We let them practice back."
 
+**What changed in 1.3** (feature/auth):
+- **Optional accounts (§5.12):** email + password sign up and log in, stored in SQLite (`node:sqlite`, built into Node 22.5+, no new dependency). Emails are HMAC-hashed, passwords salted scrypt, and phone numbers kept in E.164 but only ever shown masked. An Account tab is on every page (`/login.html`). The drill works without an account.
+
 **What changed in 1.2** (after the first merge):
 - **The live board (§5.11):** drills a person chooses to share stream live to anyone on the site (`/live.html`). Watchers get a separate `watchId`, never the `callId`.
 - **Opt-in sharing:** `POST /api/voice/session` and `POST /api/phone/start` take an optional `shareLive: true` and return `watchId`. The browser call is `VoiceClient.start(scenarioId, { shareLive })`.
@@ -18,7 +21,7 @@
 - **Downgrade reasons (§5.1, §5.2):** when the core turns a strike into a warning, it now tags the event with `downgraded`, so the Ref's view can show why.
 - **Decline (§1):** answering is now part of the drill. Declining the call is celebrated on the drill page, with no report card.
 - **Storage:** a frontend-only `scamDrill.music` key (§5.8).
-- The foundation code, fixtures, and tests are already updated (`npm test` passes; 109 tests as of 1.2).
+- The foundation code, fixtures, and tests are already updated (`npm test` passes; 122 tests as of 1.3).
 
 ## 0. How we win (read this before building anything)
 
@@ -75,7 +78,7 @@ The drill flow is **incoming call (Answer or Decline) → live call → unmask �
 
 **Pages:** `/` (the drill, with the incoming call, the Ref's view, and the report card), `/live.html` (the live board: anyone can watch shared drills as they happen), `/phone.html` (phone drills), `/report.html` (a printable report card). `?mock=1` plays a scripted demo call with no microphone or API key. `?judge=1` opens the Ref's view.
 
-**Out of scope:** user accounts (the live board is public and needs no login), a database, storing recordings, scheduling drills, mobile apps, translations.
+**Out of scope:** required logins (accounts are optional, §5.12, and the live board is public), a database, storing recordings, scheduling drills, mobile apps, translations.
 
 ## 2. Team
 
@@ -117,7 +120,7 @@ scam-drill/
     └── logic.md                                    Agent L
 ```
 
-**The foundation is already written and tested** (`npm test` passes; 109 tests as of 1.2). It includes working placeholders ("stubs") in `src/rules`, `src/judge`, `src/scenarios`, and `src/ref`, so the whole app runs from minute one. Agent L replaces those stubs. Nobody else touches them.
+**The foundation is already written and tested** (`npm test` passes; 122 tests as of 1.3). It includes working placeholders ("stubs") in `src/rules`, `src/judge`, `src/scenarios`, and `src/ref`, so the whole app runs from minute one. Agent L replaces those stubs. Nobody else touches them.
 
 ## 4. Locked foundation and change requests
 
@@ -225,8 +228,12 @@ All JSON. Errors are always `{ "error": { "code": "UPPER_SNAKE", "message": "...
 | `WS /twilio/stream` | B | Twilio Media Stream (only for calls this server placed) | |
 | `GET /api/live` | B | | `[{ watchId, title, scenarioId, channel, status, outcome, strikes, startedAt, endedAt, lines, lastLine }]`, newest first |
 | `GET /api/live/stream?watchId=` | B | | SSE, see 5.11 |
+| `POST /api/auth/signup` | B | `{ email, password, phone }` (JSON only) | `{ user: { phone: "•••• 1234" } }` + session cookie |
+| `POST /api/auth/login` | B | `{ email, password }` (JSON only) | `{ user }` + session cookie |
+| `POST /api/auth/logout` | B | `{}` (JSON only) | `{ ok: true }` |
+| `GET /api/auth/me` | B | | `{ user }` or `{ user: null }` |
 
-Error codes in use: `DRILL_NOT_FOUND` (404, live board), `SCENARIO_NOT_FOUND` (404), `CALL_NOT_FOUND` (404), `BAD_REQUEST` (400), `NUMBER_NOT_ALLOWED` (403), `PHONE_DISABLED` (503, Twilio env vars missing), `UPSTREAM_ERROR` (502, OpenAI or Twilio failed).
+Error codes in use: `EMAIL_TAKEN` (409), `INVALID_LOGIN` (401), `TOO_MANY_ATTEMPTS` (429), `AUTH_DISABLED` (503, Node without `node:sqlite`), `DRILL_NOT_FOUND` (404, live board), `SCENARIO_NOT_FOUND` (404), `CALL_NOT_FOUND` (404), `BAD_REQUEST` (400), `NUMBER_NOT_ALLOWED` (403), `PHONE_DISABLED` (503, Twilio env vars missing), `UPSTREAM_ERROR` (502, OpenAI or Twilio failed).
 
 ### 5.6 Server-Sent Events: `GET /api/stream?callId=`
 
@@ -300,6 +307,13 @@ Item = { kind: "turn", speaker, text (redactSpeech), t }
      | { kind: "action", type, strikeNumber, outcome, say, sound, event: { tier, type, quote, source, confidence, downgraded, t } | null }
 ```
 A shared drill is **listed** once its first line is spoken, so a call that never connected doesn't show up as a ghost. Its `watchId` link works from the start. Unknown `watchId` → 404 `DRILL_NOT_FOUND`.
+
+### 5.12 Accounts (optional): `src/auth/`
+
+- **Storage:** SQLite at `AUTH_DB_PATH` (default `data/scam-drill.db`, git-ignored), through `node:sqlite` (Node 22.5+). On older Node the routes answer 503 `AUTH_DISABLED` and `/api/auth/me` says logged out, so nothing else breaks.
+- **What's stored:** the email as HMAC-SHA256 (key `AUTH_SECRET`, or one generated and kept in the database), the password as salted scrypt, the phone in E.164 (it's needed to place calls) and only ever shown masked, and sessions as SHA-256 of a random token.
+- **Session:** an `sd_session` cookie: HttpOnly, SameSite=Lax, 7 days, Secure behind HTTPS.
+- **Abuse limits:** 10 sign-up or log-in attempts per IP per 15 minutes. POSTs must be JSON (a plain form can't log someone into another account). Wrong email and wrong password look and take the same.
 
 ## 6. Git workflow
 

@@ -173,3 +173,34 @@ test("http: without a database, accounts answer AUTH_DISABLED and me says logged
     close();
   }
 });
+
+test("http: account POSTs must be JSON (no login CSRF from plain forms), bad JSON is a clean 400", async () => {
+  const { auth } = await fresh();
+  const app = express();
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false })); // like server.js
+  registerAuth(app, () => auth);
+  app.use((err, req, res, _next) =>
+    res.status(err.status || 500).json({ error: { code: err.code || "INTERNAL", message: err.expose ? err.message : "Internal error" } }));
+  const server = await new Promise((resolve) => {
+    const s = app.listen(0, "127.0.0.1", () => resolve(s));
+  });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    await auth.signUp(good);
+    const form = await fetch(`${base}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "email=grandma%40example.com&password=correct+horse",
+    });
+    assert.equal(form.status, 400);
+    assert.equal(form.headers.get("set-cookie"), null);
+    const logout = await fetch(`${base}/api/auth/logout`, { method: "POST" });
+    assert.equal(logout.status, 400);
+    const broken = await fetch(`${base}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{oops" });
+    assert.equal(broken.status, 400);
+    assert.deepEqual(await broken.json(), { error: { code: "BAD_REQUEST", message: "Please send valid JSON." } });
+  } finally {
+    server.close();
+  }
+});
