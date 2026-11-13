@@ -74,7 +74,7 @@ export function eventName(e) {
 }
 
 export const TIER = { strike: "Strike", autofail: "Red card", warning: "Warning", good_defense: "Good move" };
-export const TIER_COLOR = { strike: "#FF6B88", autofail: "#FF3355", warning: "#FFCB66", good_defense: "#55F2B0" };
+export const TIER_COLOR = { strike: "var(--red)", autofail: "var(--red-ink)", warning: "var(--orange)", good_defense: "var(--green)" };
 export const DOWN = {
   low_confidence: "Downgraded: the AI wasn't sure enough to call a strike",
   repeat_type: "Downgraded: already called",

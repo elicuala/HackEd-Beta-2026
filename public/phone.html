@@ -1,80 +1,87 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Phone drill · Scam Drill</title>
-<script>(()=>{try{const t=localStorage.getItem("scamDrill.theme")||"auto",s=Number(localStorage.getItem("scamDrill.textSize"))||1;document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.style.setProperty("--scale",s)}catch(e){}})()</script>
-<link rel="preload" href="/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/js/theme-boot.js"></script>
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<div class="aurora" aria-hidden="true"><i></i><i></i></div>
-<div class="grain" aria-hidden="true"></div>
-<div class="page">
-<header class="nav wrap"><div class="nav-bar refract">
-  <a class="brand" href="/"><i aria-hidden="true"></i>SCAM DRILL</a>
-  <div class="nav-right">
-    <nav aria-label="Main">
-      <a href="/">Drill</a>
-      <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live board</a>
-      <a href="/phone.html" aria-current="page">Phone</a>
-    </nav>
-    <span class="chip" id="pill" data-s="idle" role="status"><i></i><span id="pillText">Ready</span></span>
-    <div class="tools"></div>
-  </div>
-</div></header>
+<a class="skip" href="#main">Skip to the call</a>
 
-<main class="wrap" id="main">
-  <div class="hero" style="padding-block:40px 28px">
-    <span class="kicker">Phone drill · a real call to a real phone</span>
-    <h1>Ring a phone that <span>agreed to practice.</span></h1>
-    <p class="lede">The practice scammer calls a verified number. The ref's whistle and voice play on the phone, and this page shows every line and every call as it happens.</p>
-  </div>
+<div class="app">
+  <aside class="sheet" aria-label="Phone drill">
+    <header class="sheet-head">
+      <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></h1>
+      <nav class="seg" aria-label="Main" style="--active:2">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <a href="/">Drill</a>
+        <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live</a>
+        <a href="/phone.html" aria-current="page">Phone</a>
+      </nav>
+    </header>
 
-  <div class="grid">
-    <div class="col">
-      <section class="glass" aria-labelledby="formH">
-        <div class="label"><span id="formH">Place a practice call</span></div>
-        <div class="pad">
-          <div id="disabled" class="notice info" hidden><p><b>Phone drills aren't set up on this server.</b></p><p>They need Twilio keys and a list of numbers that agreed to practice calls. You can still do a browser drill.</p><a class="go" href="/" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Start a browser drill</a></div>
-          <form id="form" class="form" hidden>
-            <div class="field"><label for="number">Phone to call</label><select id="number" required></select></div>
-            <div class="field"><label for="scenario">Scenario</label><select id="scenario" required></select></div>
-            <div>
-              <label class="toggle" for="consent"><span><b>They agreed to this</b><small>The person who answers knows it's a practice scam call.</small></span><input class="sw" type="checkbox" id="consent"></label>
-              <label class="toggle" for="share"><span><b>Show on the live board</b><small>Watchers see the conversation live. Numbers are always hidden.</small></span><input class="sw" type="checkbox" id="share" checked></label>
-            </div>
-            <button class="go" id="call" type="submit" disabled>Call</button>
-          </form>
-          <div id="errorBox" class="notice" role="alert" hidden><p id="errorText"></p></div>
-          <div id="done" class="notice info" hidden><p><b>The drill is over.</b></p><div class="btnrow"><a class="go" href="/report.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">View report card</a><button class="go ghost" id="again" type="button">Call again</button></div></div>
-        </div>
-      </section>
-      <section class="glass" aria-label="Call status">
-        <div class="stage">
-          <div class="clock" id="clock">0:00</div>
-          <div class="strikes" id="strikes" aria-live="assertive"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
-          <p class="hint">The ref's audio plays on the phone, not here.</p>
-        </div>
-      </section>
+    <div class="section-head"><h2 class="section-title" id="formH">Call a real phone</h2></div>
+    <p class="section-hint">The practice scammer calls a number that agreed to drills. The ref's whistle and voice play on the phone.</p>
+
+    <div id="disabled" class="notice info" hidden>
+      <p><b>Phone drills aren't set up on this server.</b></p>
+      <p>They need Twilio keys and a list of numbers that agreed to practice calls. You can still do a browser drill.</p>
+      <a class="go" href="/">Start a browser drill</a>
     </div>
-    <div class="col">
-      <section class="glass" aria-labelledby="convH">
-        <div class="label"><span id="convH">Live transcript</span><b id="convMeta">Waiting</b></div>
-        <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty">The call's words appear here as they're spoken.</p></div>
-      </section>
-      <section class="glass" aria-labelledby="rvH">
-        <div class="label"><span id="rvH">Ref's view</span><b>Rules + AI judge</b></div>
-        <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here.</p></div>
-      </section>
+
+    <form id="form" hidden>
+      <div class="card group form">
+        <div class="field"><label for="number">Phone to call</label><select id="number" required></select></div>
+        <div class="field"><label for="scenario">Scenario</label><select id="scenario" required></select></div>
+        <label class="toggle" for="consent"><span><b>They agreed to this<span class="req">Required</span></b><small>The person who answers knows it's a practice call.</small></span><input class="sw" type="checkbox" id="consent"></label>
+        <label class="toggle" for="share"><span><b>Show on the live board</b><small>Others can follow along. Numbers are always hidden.</small></span><input class="sw" type="checkbox" id="share" checked></label>
+      </div>
+      <button class="go" id="call" type="submit" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>
+        Call
+      </button>
+    </form>
+
+    <div id="errorBox" class="notice" role="alert" hidden><p id="errorText"></p></div>
+    <div id="done" class="decision" hidden>
+      <div class="decision-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4L18 8"/></svg></div>
+      <div><h2>The drill is over.</h2><p>See how it went, or ring again.</p>
+        <div class="btnrow"><a class="go" href="/report.html">View report card</a><button class="go ghost" id="again" type="button">Call again</button></div>
+      </div>
     </div>
-  </div>
-</main>
-<footer><div class="wrap">Phone drills only call numbers on the server's allow list, and this page only ever shows the last four digits.</div></footer>
+
+    <p class="panel-foot">Phone drills only call numbers on the server's allow list, and this page only ever shows the last four digits.</p>
+  </aside>
+
+  <main class="stage-area" id="main">
+    <div class="float float-tl"><span class="chip" id="pill" data-s="idle" role="status"><i></i><span id="pillText">Ready</span></span></div>
+    <div class="float float-tr tools"></div>
+
+    <div class="stage-inner">
+      <div class="watch">
+        <section class="card stat-card" style="width:100%" aria-label="Call status">
+          <div class="stage">
+            <span class="caller">Phone drill</span>
+            <div class="clock" id="clock">0:00</div>
+            <div class="strikes" id="strikes" aria-live="assertive"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
+            <p class="hint" style="margin:0">The ref's audio plays on the phone, not here.</p>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="convH">
+          <div class="watch-head"><h2 id="convH">Live transcript</h2><span class="section-meta" id="convMeta">Waiting</span></div>
+          <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty">The call's words appear here as they're spoken.</p></div>
+        </section>
+        <details class="card" open>
+          <summary><span>Ref's view<small>Why the ref made each call</small></span></summary>
+          <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here.</p></div>
+        </details>
+      </div>
+    </div>
+  </main>
 </div>
+
 <script type="module" src="/js/ui/prefs.js"></script>
 <script type="module" src="/js/phone.js"></script>
 </body>

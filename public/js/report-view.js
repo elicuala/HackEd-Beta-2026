@@ -43,7 +43,7 @@ export function renderReport(host, result, opts = {}) {
     : outcome === "failed_autofail"
       ? ["Red card", "PRACTICE"]
       : [`${strikes} of 3`, "STRIKES"];
-  const colors = passed ? ["#55F2B0", "#5BE7F0"] : ["#FF6B88", "#A08CFF"];
+  const colors = passed ? ["var(--green)", "var(--teal)"] : ["var(--red)", "var(--orange)"];
 
   host.replaceChildren();
 
@@ -75,7 +75,7 @@ export function renderReport(host, result, opts = {}) {
     items = events.map((e) => {
       const li = el("li");
       const node = el("span", "node");
-      node.style.setProperty("--nc", TIER_COLOR[e.tier] ?? "#A9B2CF");
+      node.style.setProperty("--nc", TIER_COLOR[e.tier] ?? "var(--text-3)");
       node.setAttribute("aria-hidden", "true");
       const body = el("div");
       const name = el("b", null, eventName(e));

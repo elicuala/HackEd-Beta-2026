@@ -1,85 +1,61 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Scam Drill · Practice scam calls with a live ref</title>
+<title>Scam Drill</title>
 <meta name="description" content="Answer a realistic practice scam call. A ref scores every answer live, then the caller drops the act and shows you the trick.">
-<script>(()=>{try{const t=localStorage.getItem("scamDrill.theme")||"auto",s=Number(localStorage.getItem("scamDrill.textSize"))||1;document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.style.setProperty("--scale",s)}catch(e){}})()</script>
-<link rel="preload" href="/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/js/theme-boot.js"></script>
 <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to the drill</a>
-<div class="aurora" aria-hidden="true"><i></i><i></i></div>
-<div class="grain" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to the call</a>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
-<div class="page">
-<header class="nav wrap"><div class="nav-bar refract">
-  <a class="brand" href="/"><i aria-hidden="true"></i>SCAM DRILL</a>
-  <div class="nav-right">
-    <nav aria-label="Main">
-      <a href="/" aria-current="page">Drill</a>
-      <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live board</a>
-      <a href="/phone.html">Phone</a>
-    </nav>
-    <span class="badge demo" id="demoBadge" hidden>Demo mode</span>
-    <a class="badge onair" id="liveBadge" hidden href="/live.html" target="_blank" rel="noopener"><span class="dot-live" aria-hidden="true"></span>On the live board</a>
-    <span class="chip" id="pill" data-s="idle" role="status"><i></i><span id="pillText">Ready</span></span>
-    <div class="tools"></div>
-  </div>
-</div></header>
+<div class="app">
+  <!-- ======================= side panel ======================= -->
+  <aside class="sheet" aria-label="Drill">
+    <header class="sheet-head">
+      <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></h1>
+      <nav class="seg" aria-label="Main" style="--active:0">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <a href="/" aria-current="page">Drill</a>
+        <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live</a>
+        <a href="/phone.html">Phone</a>
+      </nav>
+    </header>
 
-<main class="wrap" id="main">
-  <div class="hero compact">
-    <span class="kicker">Practice calls · live ref · nothing saved</span>
-    <h1>Scammers practice on your grandparents. <span>We let them practice back.</span></h1>
-    <p class="lede">Answer a realistic practice scam call. A ref scores every answer in real time, then the caller drops the act and shows you exactly how the trick works.</p>
-  </div>
-
-  <ol class="steps glass" id="steps" aria-label="Your progress">
-    <li data-step="pick" aria-current="step">Pick a call</li>
-    <li data-step="answer">Answer</li>
-    <li data-step="talk">Talk</li>
-    <li data-step="learn">See how you did</li>
-  </ol>
-
-  <div id="errorBox" class="notice" role="alert" hidden>
-    <p id="errorText"></p>
-    <div class="btnrow">
-      <button class="go" id="retry" type="button">Try again</button>
-      <button class="go ghost" id="playDemo" type="button">Play the demo call instead</button>
+    <div id="errorBox" class="notice" role="alert" hidden>
+      <p id="errorText"></p>
+      <div class="btnrow">
+        <button class="go" id="retry" type="button">Try again</button>
+        <button class="go ghost" id="playDemo" type="button">Play the demo call instead</button>
+      </div>
     </div>
-  </div>
 
-  <div class="grid">
-    <div class="col">
-      <section class="glass" id="pickPanel" aria-labelledby="pickH">
-        <div class="label"><span id="pickH">Choose a practice call</span><b id="scenCount">Loading…</b></div>
-        <div class="pad">
-          <div class="opts" id="scen" role="radiogroup" aria-labelledby="pickH"></div>
-          <div class="toggles">
-            <label class="toggle required" for="consent"><span><b>This is a practice call</b><small>I understand it's a pretend scam call, just for practice.</small></span><input class="sw" type="checkbox" id="consent"></label>
-            <label class="toggle" for="share"><span><b>Show on the live board</b><small>People watching the site can follow along. Numbers are always hidden.</small></span><input class="sw" type="checkbox" id="share" checked></label>
-          </div>
-          <div class="minis-toggles" role="group" aria-label="Sound">
-            <label class="pill-toggle" for="snd"><input class="sw" type="checkbox" id="snd"> Ref sounds</label>
-            <label class="pill-toggle" for="music"><input class="sw" type="checkbox" id="music"> Music</label>
-          </div>
-          <button class="go" id="start" type="button" disabled>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>
-            Start the practice call
-          </button>
-          <p class="fine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nothing you say is saved. Headphones work best. Say "stop" anytime to end.</span></p>
-        </div>
-      </section>
+    <section id="pickPanel" class="pane" aria-labelledby="pickH">
+      <div class="section-head"><h2 class="section-title" id="pickH">Choose a call</h2><span class="section-meta" id="scenCount">Loading…</span></div>
+      <div class="card group"><div class="opts" id="scen" role="radiogroup" aria-labelledby="pickH"></div></div>
 
-      <section class="glass" id="declinedPanel" hidden aria-labelledby="decH">
-        <div class="declined">
-          <div class="big-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
-          <span class="kicker">Call declined</span>
+      <div class="section-head"><h2 class="section-title">Before you start</h2></div>
+      <div class="card group toggles">
+        <label class="toggle" for="consent"><span><b>This is a practice call<span class="req">Required</span></b><small>I understand it's a pretend scam call, just for practice.</small></span><input class="sw" type="checkbox" id="consent"></label>
+        <label class="toggle" for="share"><span><b>Show on the live board</b><small>Others can follow along. Numbers are always hidden.</small></span><input class="sw" type="checkbox" id="share" checked></label>
+        <label class="toggle" for="snd"><span><b>Ref sounds</b><small>Whistle, chime and red-card sting.</small></span><input class="sw" type="checkbox" id="snd"></label>
+        <label class="toggle" for="music"><span><b>Music</b><small>A quiet score that tightens with every strike.</small></span><input class="sw" type="checkbox" id="music"></label>
+      </div>
+
+      <button class="go" id="start" type="button" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>
+        Start practice call
+      </button>
+      <p class="fine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nothing you say is saved. Headphones work best. Say "stop" anytime to end.</span></p>
+    </section>
+
+    <section id="declinedPanel" hidden aria-labelledby="decH">
+      <div class="decision">
+        <div class="decision-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4L18 8"/></svg></div>
+        <div>
           <h2 id="decH">Great habit.</h2>
           <p>Not answering unknown numbers is one of the best ways to stay safe. Scammers count on you picking up. Let it go to voicemail, then call back on a number you trust.</p>
           <div class="btnrow">
@@ -87,45 +63,77 @@
             <button class="go ghost" id="backToPick" type="button">Pick another call</button>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="glass" id="callPanel" hidden aria-label="Call">
+    <section class="conv" aria-labelledby="convH">
+      <div class="section-head"><h2 class="section-title" id="convH">Conversation</h2><span class="section-meta" id="convMeta">Waiting</span></div>
+      <div class="card"><div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty">Your practice call will appear here as it happens.</p></div></div>
+      <div class="section-head"><h2 class="section-title">Ref's view</h2></div>
+      <details class="card" id="rvBox">
+        <summary><span>Why the ref made each call<small>Rules engine + AI judge, with confidence</small></span></summary>
+        <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here, with where it came from and how sure it was.</p></div>
+      </details>
+    </section>
+
+    <p class="panel-foot">Drills are practice. Nothing you say is recorded or stored.</p>
+  </aside>
+
+  <!-- ======================= stage (WayKin's map area) ======================= -->
+  <main class="stage-area" id="main">
+    <div class="float float-tl">
+      <span class="chip" id="pill" data-s="idle" role="status"><i></i><span id="pillText">Ready</span></span>
+      <span class="badge demo" id="demoBadge" hidden>Demo mode</span>
+      <a class="badge onair" id="liveBadge" hidden href="/live.html" target="_blank" rel="noopener"><span class="dot-live" aria-hidden="true"></span>On the live board</a>
+    </div>
+    <div class="float float-tr tools"></div>
+
+    <div class="stage-inner">
+      <div class="float float-tc">
+        <ol class="steps" id="steps" aria-label="Your progress">
+          <li data-step="pick" aria-current="step">Pick a call</li>
+          <li data-step="answer">Answer</li>
+          <li data-step="talk">Talk</li>
+          <li data-step="learn">See how you did</li>
+        </ol>
+      </div>
+
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></div>
+        <span class="kicker">Practice calls · live ref · nothing saved</span>
+        <h2>Scammers practice on your grandparents. We let them practice back.</h2>
+        <p>Answer a realistic practice scam call. A ref scores every answer in real time, then the caller drops the act and shows you exactly how the trick works.</p>
+        <div class="how">
+          <div><i>1</i><b>Pick a call</b>Tax agency, grandchild in trouble, or your bank's "fraud team".</div>
+          <div><i>2</i><b>Talk it through</b>Answer like you would. The ref calls strikes as they happen.</div>
+          <div><i>3</i><b>See the trick</b>The caller drops the act and you get a report card.</div>
+        </div>
+      </div>
+
+      <section class="call-card" id="callPanel" hidden aria-label="Call">
         <div class="stage" id="stage">
           <span class="caller" id="callerLbl">Incoming call</span>
           <canvas class="orb" id="orb" width="560" height="560" aria-hidden="true"></canvas>
           <div class="who" id="whoLbl">Unknown caller</div>
-          <div class="hint" id="callScen"></div>
+          <div class="hint" id="callScen" style="margin:0"></div>
           <div id="ringBtns" class="callbtns">
             <button class="rb dec" id="decline" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>Decline</button>
             <button class="rb acc" id="answer" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>Answer</button>
           </div>
-          <div id="liveBits" hidden style="display:grid;gap:14px;justify-items:center;width:100%">
+          <div id="liveBits" hidden style="display:grid;gap:12px;justify-items:center;width:100%">
             <div class="clock" id="clock">0:00</div>
             <div class="strikes" id="strikes" aria-live="assertive"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
             <div class="refline"><small>REF</small><p id="refText">Listening.</p></div>
             <div class="caption" id="caption" hidden><small>THE CALLER, OUT OF CHARACTER</small><p id="captionText"></p></div>
-            <button class="rb dec" id="end" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>End the call</button>
-            <p class="hint" id="stopHint">Say "stop" anytime to end.</p>
+            <button class="rb dec" id="end" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></span>End call</button>
+            <p class="hint" id="stopHint" style="margin:0">Say "stop" anytime to end.</p>
           </div>
         </div>
       </section>
-    </div>
 
-    <div class="col">
-      <section class="glass" aria-labelledby="convH">
-        <div class="label"><span id="convH">Conversation</span><b id="convMeta">Waiting</b></div>
-        <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty">Your practice call will appear here as it happens.</p></div>
-      </section>
-      <details class="glass" id="rvBox">
-        <summary class="label" style="cursor:pointer"><span id="rvH">Ref's view <span class="sub">Why the ref made each call</span></span><b>Rules + AI</b></summary>
-        <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here, with where it came from and how sure it was.</p></div>
-      </details>
+      <section id="report" class="report" hidden aria-labelledby="repH"></section>
     </div>
-  </div>
-
-  <section id="report" class="report" hidden aria-labelledby="repH"></section>
-</main>
-<footer><div class="wrap"><span>Scam Drill · drills are practice, nothing you say is recorded or stored.</span><span>Fonts: Unbounded, Manrope, JetBrains Mono (SIL OFL 1.1)</span></div></footer>
+  </main>
 </div>
 
 <script type="module" src="/js/ui/prefs.js"></script>
