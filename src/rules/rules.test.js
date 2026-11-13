@@ -71,6 +71,8 @@ test("autofail card_number: digits and spoken digits", () => {
   assert.deepEqual(types(run("the number is four five one two")), ["autofail/card_number"]);
   assert.deepEqual(types(run("it starts with forty five twelve")), ["autofail/card_number"]);
   assert.deepEqual(types(run("double four five five")), ["autofail/card_number"]);
+  assert.deepEqual(types(run("4512 3344 5566 7788 and the back says 123")), ["autofail/card_number"]);
+  assert.deepEqual(types(run("4512 334 4556")), ["autofail/card_number"]);
 });
 
 test("autofail sin_number: nine digits, or saying what the SIN is", () => {
@@ -185,6 +187,10 @@ test("guards: lines that must not fire", () => {
   assert.deepEqual(run("You want five thousand dollars?"), []);
   assert.deepEqual(run("You want $5000 in gift cards?"), []);
   assert.deepEqual(run("Oh no, really? What do I owe?"), []);
+  assert.deepEqual(run("You can reach me at 780 555 1234"), []);
+  assert.deepEqual(run("I paid my taxes in March 2024"), []);
+  assert.deepEqual(run("I have lived here since nineteen eighty seven"), []);
+  assert.deepEqual(run("I am seventy five years old"), []);
   assert.deepEqual(
     run("The CRA doesn't threaten arrest over the phone. I'm going to hang up and call the number on the official website."),
     [],

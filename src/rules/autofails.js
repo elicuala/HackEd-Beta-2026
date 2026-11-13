@@ -14,6 +14,7 @@ export const DATE_PATTERNS = [
   new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)?\\s+of\\s+${MONTH}(?:,?\\s+${YEAR})?\\b`, "gi"), // 3rd of March 1952
   /\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g, // 03/03/1952
   new RegExp(`\\b(?:in|since|born|year|from|of)\\s+${YEAR}\\b`, "gi"), // born in 1952
+  new RegExp(`\\b${MONTH}\\s+${YEAR}\\b`, "gi"), // March 2024
 ];
 
 export const ADDRESS = new RegExp(
@@ -21,14 +22,17 @@ export const ADDRESS = new RegExp(
   "gi",
 );
 
+// A ten-digit phone number standing on its own: 780 555 1234.
+const PHONE = /(?<!\d[\s.-]?)\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}(?![\s.-]?\d)/g;
 const MONEY = /\$\s?\d[\d,.]*/g;
 const COUNTED =
   /\b\d[\d,.]*\s*(?:dollars?|bucks|cents|percent|years?|months?|weeks?|days?|hours?|minutes?|times|people|kids|grandkids|grandchildren|cards?)\b/gi;
 
-/** Remove numbers that are clearly not account numbers: money, dates, street addresses, counts. */
+/** Remove numbers that are clearly not account numbers: money, dates, addresses, phone numbers, counts. */
 export function accountDigits(normalized) {
   let text = normalized.replace(MONEY, " ").replace(COUNTED, " ").replace(ADDRESS, " ");
   for (const re of DATE_PATTERNS) text = text.replace(re, " ");
+  text = text.replace(PHONE, " ");
   return collapseDigits(text);
 }
 
