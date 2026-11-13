@@ -1,0 +1,187 @@
+{
+  "scenarioId": "cra",
+  "steps": [
+    {
+      "delayMs": 700,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 3200,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "Hello, this is Officer Grant from the Canada Revenue Agency. There is an unpaid balance on your file.",
+        "t": 2
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "What's your employee ID number?",
+        "t": 6
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "credit_shown",
+          "event": {
+            "tier": "good_defense",
+            "type": "verification",
+            "quote": "What's your employee ID number?",
+            "source": "ai",
+            "confidence": 0.9,
+            "t": 6
+          },
+          "callId": "mock-call",
+          "ref": {
+            "say": null,
+            "sound": "chime"
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 2700,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "That's not important. A warrant will be issued today if you don't pay.",
+        "t": 8
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "The CRA doesn't threaten arrest over the phone. I'm going to hang up and call the number on the official website.",
+        "t": 12
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "credit_shown",
+          "event": {
+            "tier": "good_defense",
+            "type": "verification",
+            "quote": "The CRA doesn't threaten arrest over the phone. I'm going to hang up and call the number on the official website.",
+            "source": "ai",
+            "confidence": 0.9,
+            "t": 12
+          },
+          "callId": "mock-call",
+          "ref": {
+            "say": null,
+            "sound": "chime"
+          }
+        }
+      ]
+    },
+    {
+      "delayMs": 900,
+      "kind": "status",
+      "data": "scammer_speaking"
+    },
+    {
+      "delayMs": 2010,
+      "kind": "turn",
+      "data": {
+        "speaker": "scammer",
+        "text": "If you hang up, police will come to your house.",
+        "t": 14
+      }
+    },
+    {
+      "delayMs": 250,
+      "kind": "status",
+      "data": "live"
+    },
+    {
+      "delayMs": 1500,
+      "kind": "turn",
+      "data": {
+        "speaker": "victim",
+        "text": "Nope. Stop.",
+        "t": 18
+      }
+    },
+    {
+      "delayMs": 500,
+      "kind": "actions",
+      "data": [
+        {
+          "type": "reveal",
+          "outcome": "passed",
+          "events": [
+            {
+              "tier": "good_defense",
+              "type": "verification",
+              "quote": "What's your employee ID number?",
+              "source": "ai",
+              "confidence": 0.9,
+              "t": 6
+            },
+            {
+              "tier": "good_defense",
+              "type": "verification",
+              "quote": "The CRA doesn't threaten arrest over the phone. I'm going to hang up and call the number on the official website.",
+              "source": "ai",
+              "confidence": 0.9,
+              "t": 12
+            }
+          ],
+          "callId": "mock-call",
+          "scenarioId": "cra",
+          "scenarioTitle": "Tax agency call",
+          "endedAt": "2026-11-13T21:02:18.250Z",
+          "ref": {
+            "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right.",
+            "sound": "fanfare"
+          }
+        }
+      ]
+    }
+  ],
+  "endReveal": {
+    "type": "reveal",
+    "outcome": "passed",
+    "events": [],
+    "callId": "mock-call",
+    "scenarioId": "cra",
+    "scenarioTitle": "Tax agency call",
+    "endedAt": "2026-11-13T21:02:18.250Z",
+    "ref": {
+      "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
+      "sound": "fanfare"
+    }
+  }
+}

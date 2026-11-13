@@ -6,11 +6,19 @@ A fire drill for phone scams. An AI scammer calls a person who opted in, and a r
 
 **Humans:** read `SPEC.md`, starting with **§0: How we win** (main track first, then Best Looking Project and Best Inclusion of Music). **Agents:** start at `CLAUDE.md`.
 
+## Pages
+| Page | What it is |
+|---|---|
+| `/` | The drill: incoming call → live call with a ref → the unmask → the report card. `?mock=1` plays a demo call (no mic, no key). `?judge=1` opens the Ref's view |
+| `/live.html` | **Live board**: anyone on the site can watch shared drills as they happen (numbers always hidden) |
+| `/phone.html` | Phone drills through Twilio (needs the Twilio env vars) |
+| `/report.html` | The last report card, printable (`?fixture=passed` for a sample) |
+
 ## Quick start (every teammate)
 ```bash
 npm install            # from the lockfile, do not add packages
 cp .env.example .env   # fill in your keys (get them privately from the team)
-npm test               # 16 foundation tests must pass
+npm test               # all tests must pass (109)
 npm run dev            # http://localhost:3000
 npm run simulate -- test/fixtures/transcript-cra-fail.json
 ```

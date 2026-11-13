@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phone drill · Scam Drill</title>
+<link rel="stylesheet" href="/css/desk.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<div class="page">
+<header class="nav"><div class="wrap">
+  <span class="brand"><i aria-hidden="true"></i>SCAM DRILL</span>
+  <div class="nav-right">
+    <nav aria-label="Main">
+      <a href="/">Drill</a>
+      <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live board</a>
+      <a href="/phone.html" aria-current="page">Phone drill</a>
+    </nav>
+    <span class="chip" id="pill" data-s="idle" role="status"><i></i><span id="pillText">Ready</span></span>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <div class="hero" style="padding-block:40px 28px">
+    <span class="kicker">Phone drill · a real call to a real phone</span>
+    <h1>Ring a phone that <span>agreed to practice.</span></h1>
+    <p class="lede">The practice scammer calls a verified number. The ref's whistle and voice play on the phone, and this page shows every line and every call as it happens.</p>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="glass" aria-labelledby="formH">
+        <div class="label"><span id="formH">Place a practice call</span></div>
+        <div class="pad">
+          <div id="disabled" class="notice info" hidden><p><b>Phone drills aren't set up on this server.</b></p><p>They need Twilio keys and a list of numbers that agreed to practice calls. You can still do a browser drill.</p><a class="go" href="/" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Start a browser drill</a></div>
+          <form id="form" class="form" hidden>
+            <div class="field"><label for="number">Phone to call</label><select id="number" required></select></div>
+            <div class="field"><label for="scenario">Scenario</label><select id="scenario" required></select></div>
+            <div>
+              <label class="toggle" for="consent"><span><b>They agreed to this</b><small>The person who answers knows it's a practice scam call.</small></span><input class="sw" type="checkbox" id="consent"></label>
+              <label class="toggle" for="share"><span><b>Show on the live board</b><small>Watchers see the conversation live. Numbers are always hidden.</small></span><input class="sw" type="checkbox" id="share" checked></label>
+            </div>
+            <button class="go" id="call" type="submit" disabled>Call</button>
+          </form>
+          <div id="errorBox" class="notice" role="alert" hidden><p id="errorText"></p></div>
+          <div id="done" class="notice info" hidden><p><b>The drill is over.</b></p><div class="btnrow"><a class="go" href="/report.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">View report card</a><button class="go ghost" id="again" type="button">Call again</button></div></div>
+        </div>
+      </section>
+      <section class="glass" aria-label="Call status">
+        <div class="stage">
+          <div class="clock" id="clock">0:00</div>
+          <div class="strikes" id="strikes" aria-live="assertive"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
+          <p class="hint">The ref's audio plays on the phone, not here.</p>
+        </div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="glass" aria-labelledby="convH">
+        <div class="label"><span id="convH">Live transcript</span><b id="convMeta">Waiting</b></div>
+        <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty">The call's words appear here as they're spoken.</p></div>
+      </section>
+      <section class="glass" aria-labelledby="rvH">
+        <div class="label"><span id="rvH">Ref's view</span><b>Rules + AI judge</b></div>
+        <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here.</p></div>
+      </section>
+    </div>
+  </div>
+</main>
+<footer><div class="wrap">Phone drills only call numbers on the server's allow list, and this page only ever shows the last four digits.</div></footer>
+</div>
+<script type="module" src="/js/phone.js"></script>
+</body>
+</html>

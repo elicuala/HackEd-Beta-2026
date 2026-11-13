@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live board · Scam Drill</title>
+<meta name="description" content="Watch practice scam calls happen live: the conversation, the ref's calls, and the unmask.">
+<link rel="stylesheet" href="/css/desk.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<div class="page">
+<header class="nav"><div class="wrap">
+  <span class="brand"><i aria-hidden="true"></i>SCAM DRILL</span>
+  <div class="nav-right">
+    <nav aria-label="Main">
+      <a href="/">Drill</a>
+      <a href="/live.html" aria-current="page"><span class="dot-live" aria-hidden="true"></span>Live board</a>
+      <a href="/phone.html">Phone drill</a>
+    </nav>
+    <span class="chip" id="conn" data-s="connecting" role="status"><i></i><span id="connText">Connecting</span></span>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <div class="hero" style="padding-block:40px 28px">
+    <span class="kicker">Live board · numbers always hidden</span>
+    <h1>Watch the drills <span>as they happen.</span></h1>
+    <p class="lede">Every drill someone chose to share appears here: the scam caller, their answers, the ref's calls, and the moment the caller drops the act.</p>
+  </div>
+
+  <div class="board">
+    <section class="glass" aria-labelledby="listH">
+      <div class="label"><span id="listH">Drills</span><b id="listMeta">…</b></div>
+      <ul class="drills" id="drills" aria-labelledby="listH"></ul>
+      <div class="pad" style="padding-top:0">
+        <label class="toggle" for="follow"><span><b>Follow new drills</b><small>Jump to each new call automatically.</small></span><input class="sw" type="checkbox" id="follow" checked></label>
+      </div>
+    </section>
+
+    <div class="col">
+      <section class="glass" aria-labelledby="watchH">
+        <div class="watch-head">
+          <h2 id="watchH">Pick a drill to watch</h2>
+          <div class="minis">
+            <span class="badge" id="watchStatus" hidden></span>
+            <div class="strikes" id="strikes" aria-live="polite"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
+          </div>
+        </div>
+        <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="watchH"><p class="empty">The conversation shows up here, live.</p></div>
+      </section>
+      <section class="glass" aria-labelledby="rvH">
+        <div class="label"><span id="rvH">Ref's view</span><b>Rules + AI judge</b></div>
+        <div class="rv" id="rv"><p class="rv-empty">Each call the ref makes appears here, with where it came from and how sure it was.</p></div>
+      </section>
+    </div>
+  </div>
+</main>
+<footer><div class="wrap">Only drills whose caller ticked "Show on the live board" appear here. Digits and spoken numbers are hidden. Nothing is recorded: drills drop off the board 15 minutes after they end.</div></footer>
+</div>
+<script type="module" src="/js/live.js"></script>
+</body>
+</html>
