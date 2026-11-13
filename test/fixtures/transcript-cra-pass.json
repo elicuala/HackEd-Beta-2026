@@ -1,0 +1,8 @@
+[
+  { "speaker": "scammer", "text": "Hello, this is Officer Grant from the Canada Revenue Agency. There is an unpaid balance on your file.", "t": 0 },
+  { "speaker": "victim", "text": "What's your employee ID number?", "t": 5 },
+  { "speaker": "scammer", "text": "That's not important. A warrant will be issued today if you don't pay.", "t": 9 },
+  { "speaker": "victim", "text": "The CRA doesn't threaten arrest over the phone. I'm going to hang up and call the number on the official website.", "t": 15 },
+  { "speaker": "scammer", "text": "If you hang up, police will come to your house.", "t": 21 },
+  { "speaker": "victim", "text": "Nope. Stop.", "t": 24 }
+]

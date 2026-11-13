@@ -1,0 +1,30 @@
+{
+  "type": "reveal",
+  "callId": "00000000-0000-4000-8000-000000000000",
+  "scenarioId": "cra",
+  "scenarioTitle": "Tax agency call",
+  "endedAt": "2026-11-14T18:00:00.000Z",
+  "ref": {
+    "say": "This was a Scam Drill. You're safe, and nothing you said was saved.",
+    "sound": "chime"
+  },
+  "outcome": "passed",
+  "events": [
+    {
+      "tier": "good_defense",
+      "type": "asked_to_verify",
+      "quote": "What's your employee ID number?",
+      "source": "ai",
+      "confidence": 0.9,
+      "t": 5
+    },
+    {
+      "tier": "good_defense",
+      "type": "will_call_back",
+      "quote": "I'm going to hang up and call the number on the official website.",
+      "source": "ai",
+      "confidence": 0.95,
+      "t": 15
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "scam-drill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "test": "JUDGE_MOCK=1 node --test",
+    "simulate": "node scripts/simulate.js",
+    "check-ownership": "node scripts/check-ownership.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "openai": "^7.56.0",
+    "twilio": "^6.3.0",
+    "ws": "^8.23.0"
+  }
+}

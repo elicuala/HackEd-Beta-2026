@@ -1,0 +1,10 @@
+[
+  { "speaker": "scammer", "text": "Hello, this is Officer Grant from the Canada Revenue Agency. There is an unpaid balance on your file.", "t": 0 },
+  { "speaker": "victim", "text": "Oh no, really? What do I owe?", "t": 6 },
+  { "speaker": "scammer", "text": "Which bank do you use so I can check your records?", "t": 10 },
+  { "speaker": "victim", "text": "I'm with TD.", "t": 14 },
+  { "speaker": "scammer", "text": "A warrant will be issued today. Stay on the line and don't tell anyone.", "t": 18 },
+  { "speaker": "victim", "text": "Okay, I won't tell anyone. I'll stay on the line.", "t": 24 },
+  { "speaker": "scammer", "text": "You need to pay with gift cards. Read me the card number.", "t": 30 },
+  { "speaker": "victim", "text": "Okay, the card number is four five one two three three four four.", "t": 40 }
+]

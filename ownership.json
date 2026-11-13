@@ -1,0 +1,37 @@
+{
+  "_comment": "Single source of truth for who may edit what. Longest matching prefix wins. Paths ending in / are folders. Checked by: npm run check-ownership -- <role>",
+  "owners": {
+    "foundation": [
+      "package.json",
+      "package-lock.json",
+      "server.js",
+      ".env.example",
+      ".gitignore",
+      "ownership.json",
+      "SPEC.md",
+      "CLAUDE.md",
+      "roles/",
+      "scripts/",
+      "test/",
+      "src/shared/",
+      "src/core/"
+    ],
+    "frontend": [
+      "public/",
+      "handoff/frontend.md"
+    ],
+    "backend": [
+      "src/voice/",
+      "src/phone/",
+      "public/js/voice-client.js",
+      "handoff/backend.md"
+    ],
+    "logic": [
+      "src/rules/",
+      "src/judge/",
+      "src/scenarios/",
+      "src/ref/",
+      "handoff/logic.md"
+    ]
+  }
+}
