@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice dev (Agent B)</title>
+<style>
+  :root { color-scheme: light dark; font: 16px/1.5 system-ui, sans-serif; }
+  body { max-width: 860px; margin: 24px auto; padding: 0 16px; }
+  fieldset { border: 1px solid #8884; border-radius: 8px; margin: 0 0 12px; }
+  button, select { font: inherit; padding: 6px 12px; margin: 2px; }
+  #status { font-weight: 700; }
+  #lat { font-family: ui-monospace, monospace; }
+  #log { font: 13px/1.4 ui-monospace, monospace; white-space: pre-wrap; border: 1px solid #8884;
+         border-radius: 8px; padding: 8px; height: 420px; overflow: auto; }
+  .scammer { color: #c0392b; } .victim { color: #2471a3; } .action { color: #b9770e; } .err { color: #e74c3c; }
+</style>
+</head>
+<body>
+<h1>Voice client dev page</h1>
+<p>Private test page for <code>public/js/voice-client.js</code>. Use headphones. Not linked from the site.</p>
+
+<fieldset>
+  <legend>Call</legend>
+  <label>Scenario <select id="scenario"></select></label>
+  <button id="start">Start</button>
+  <button id="end" disabled>End</button>
+  Status: <span id="status">idle</span>
+</fieldset>
+
+<fieldset>
+  <legend>Ref simulation</legend>
+  <button id="pause" disabled>pauseScammer</button>
+  <button id="resume" disabled>resumeScammer</button>
+  <label><input type="checkbox" id="ref" disabled> setRefSpeaking</label>
+  <label><input type="checkbox" id="autoUnmask" checked> auto unmask on reveal</label>
+  <button id="unmask" disabled>unmask("This was a Scam Drill…")</button>
+</fieldset>
+
+<fieldset>
+  <legend>Latency (end of your speech → first scammer audio)</legend>
+  <div id="lat">no samples yet</div>
+</fieldset>
+
+<div id="log" role="log" aria-live="polite"></div>
+
+<script type="module">
+import { createVoiceClient } from "/js/voice-client.js";
+
+const $ = (id) => document.getElementById(id);
+const log = (cls, text) => {
+  const line = document.createElement("div");
+  line.className = cls;
+  line.textContent = `${new Date().toLocaleTimeString()}  ${text}`;
+  $("log").prepend(line);
+};
+
+const scenarios = await (await fetch("/api/scenarios")).json();
+for (const s of scenarios) $("scenario").append(new Option(`${s.title} (${s.id})`, s.id));
+
+const samples = [];
+let speechStoppedAt = null;
+const showLatency = () => {
+  if (!samples.length) return;
+  const sorted = [...samples].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  $("lat").textContent = `samples (ms): ${samples.map(Math.round).join(", ")}   median: ${Math.round(median)} ms`;
+};
+
+const UNMASK_LINE = "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved.";
+let client = null;
+
+function setLive(on) {
+  for (const id of ["end", "pause", "resume", "ref"]) $(id).disabled = !on;
+}
+
+$("start").onclick = async () => {
+  $("start").disabled = true;
+  client = createVoiceClient({
+    onStatus: (s) => {
+      $("status").textContent = s;
+      log("status", `status: ${s}`);
+      if (s === "live") setLive(true);
+      if (s === "ended") { setLive(false); $("unmask").disabled = true; $("start").disabled = false; }
+    },
+    onTurn: (t) => log(t.speaker, `${t.t.toFixed(1)}s ${t.speaker}: ${t.text}`),
+    onActions: (actions) => {
+      for (const a of actions) {
+        log("action", `ACTION ${a.type}${a.event ? ` ${a.event.tier}/${a.event.type}` : ""}${a.outcome ? ` ${a.outcome}` : ""}` +
+          `  ref=${JSON.stringify(a.ref)}`);
+        if (a.type === "reveal") {
+          setLive(false);
+          $("unmask").disabled = false;
+          if ($("autoUnmask").checked) runUnmask(a.ref?.say || UNMASK_LINE);
+        }
+      }
+    },
+    onError: (e) => log("err", `ERROR ${e.code}: ${e.message}`),
+    onDebug: (d) => {
+      if (d.type === "speech_stopped") speechStoppedAt = d.at;
+      else if (d.type === "scammer_audio_started" && speechStoppedAt !== null && d.kind === "reply") {
+        samples.push(d.at - speechStoppedAt);
+        speechStoppedAt = null;
+        showLatency();
+      } else if (d.type !== "scammer_audio_started") log("debug", `debug ${d.type}${d.code ? ` ${d.code}` : ""}`);
+    },
+  });
+  try {
+    const { callId } = await client.start($("scenario").value);
+    log("status", `callId ${callId}`);
+  } catch (e) {
+    $("start").disabled = false;
+  }
+};
+
+async function runUnmask(line) {
+  $("unmask").disabled = true;
+  const t = performance.now();
+  const ok = await client.unmask(line);
+  log("action", `unmask resolved ${ok} after ${Math.round(performance.now() - t)} ms`);
+}
+
+$("end").onclick = () => client?.end();
+$("pause").onclick = () => client?.pauseScammer();
+$("resume").onclick = () => client?.resumeScammer();
+$("ref").onchange = (e) => client?.setRefSpeaking(e.target.checked);
+$("unmask").onclick = () => runUnmask(UNMASK_LINE);
+</script>
+</body>
+</html>
