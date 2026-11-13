@@ -2,7 +2,7 @@
 
 A fire drill for phone scams. An AI scammer calls a person who opted in, a ref scores the call live, and the AI drops the act to teach the tactic that almost worked.
 
-**Humans:** read `SPEC.md`. **Agents:** start at `CLAUDE.md`.
+**Humans:** read `SPEC.md`, starting with **§0: How we win** (main track first, then Best Looking Project and Best Inclusion of Music). **Agents:** start at `CLAUDE.md`.
 
 ## Quick start (every teammate)
 ```bash

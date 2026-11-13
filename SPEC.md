@@ -1,15 +1,61 @@
 # Scam Drill: project specification
 
-**Version 1.0 · Hackathon build · 3 people, 3 Claude Code agents, working in parallel**
+**Version 1.1 · Hackathon build · 3 people, 3 Claude Code agents, working in parallel**
 
 > "Scammers practice on your grandparents every day. We let them practice back."
+
+**What changed in 1.1:** added §0 (how we win), the music and visual-design work in `roles/FRONTEND.md`, and demo and Devpost gates in §7. **No API, data type, or module interface in §5 changed.** The only §5 addition is one frontend-only storage key (§5.8). Everything new is additive and lives inside one role's paths.
+
+## 0. How we win (read this before building anything)
+
+### 0.1 Prize targets, in priority order
+| Priority | Category | Entered? | Why |
+|---|---|---|---|
+| **1** | **Main track** ($500 / $250 / $250) | Automatic | Judges score **Execution, Complexity, Polish, Originality, Utility**, 1 to 5 each (25 max). Every feature decision is checked against §0.2. |
+| 2 | **Best Looking Project** | ✅ Select on Devpost | Polish is already a main-track criterion, so visual work counts twice. |
+| 2 | **Best Inclusion of Music** | ✅ Select on Devpost | An adaptive soundtrack that reacts to the drill (§0.4). Frontend only, no new dependencies, and it also raises Polish. |
+| – | Best Soloist | ❌ | We're a team of three, so we're not eligible. |
+| – | Best Environmental Project | ❌ | We don't have an honest fit. A stretched claim costs credibility with the same judges who score the main track. |
+| – | Hidden categories | Can't target | Likely themes (social good, accessibility, use of AI, best pitch) are covered by doing the main track well. |
+
+**The rule:** main-track work always beats category work. Music and motion are built only after the browser drill works end to end (sync 2). If they threaten the demo, they get cut.
+
+### 0.2 Judging map: what earns a 5
+| Criterion | A 5 looks like | How we earn it | Owner |
+|---|---|---|---|
+| **Execution** | The live demo works the first time, with no dead air | Mock fallback (`?mock=1`) one keypress away, a backup video, 3 rehearsals, voice latency ≤ 1.5 s, every error state friendly | All |
+| **Complexity** | Judges can *see* that it's hard | Realtime voice over WebRTC, a **two-layer ref** (deterministic rules plus an LLM judge with confidence gating), a spoken-number normalizer, live SSE, and a real phone call (stretch). Shown in the **Ref's view** panel (§0.3) and an architecture diagram on Devpost | L and B build it, F shows it |
+| **Polish** | It feels like a shipped product, not a hackathon page | A design system, purposeful motion, sound design, a printable report card, no console errors | F (with L's ref lines) |
+| **Originality** | "I haven't seen that before" | The **reveal**: the scammer drops the act mid-call and coaches you. AI voice cloning is turned from the threat into the vaccine. The ref is a sports official with whistles, strikes, and a red card | All |
+| **Utility** | A real person would use it tomorrow | Seniors-first accessibility (WCAG 2.2 AA), Canadian scam scripts based on CAFC and CRA guidance, one takeaway habit per drill, and nothing is saved | L (content), F (accessibility) |
+
+### 0.3 Make the complexity visible: the Ref's view
+Judges score what they can see. The live drill page has a collapsible **"Ref's view"** panel (open by default during the demo, closed for real users). It shows each `RefEvent` as it arrives with its tier, `type`, redacted quote, **source** ("Rules" or "AI judge") and **confidence** (for example "AI judge · 86%"), plus a note whenever the core downgraded an AI strike to a warning. All of this is already in `RefEvent` (§5.1), so it needs no contract change.
+
+### 0.4 Music and sound (Best Inclusion of Music)
+All of it is built by Agent F with the Web Audio API: no audio files are required, there are no new dependencies, and it's driven only by the `WireAction`s the page already receives. Details are in `roles/FRONTEND.md`.
+- **Adaptive tension score:** a quiet generative soundtrack during the live drill that gains a layer with each strike (a pulse, a faster tempo, then a minor drone), lifts on `good_defense`, ducks while the scammer or ref speaks, and stops dead at the reveal.
+- **The ref's sound identity:** whistle-style buzzer for strikes, a "red card" sting for autofails, a two-note chime for credit, and a short victory fanfare for `passed`. These are mapped on the client from `ref.sound` plus the action's `type`/`outcome`.
+- **Visualized:** a live visualizer of the score on the call screen, and a **"Replay your drill"** button on the report card that plays the timeline back as a 10-second melody (defenses rise, strikes fall) while each event card lights up in turn.
+- A clear **Music on/off** toggle that is remembered per browser.
+
+### 0.5 The 3-minute demo (rehearse this exact script)
+Use a **speaker, not headphones**, so judges hear the scammer, the ref, and the music. Test speaker mode at sync 2 (echo can leak into the mic). If it's bad, the "grandparent" wears a headset mic while the output goes to the speaker.
+1. **Hook (15 s):** the tagline, plus the latest Canadian Anti-Fraud Centre reported-loss figure (look it up and cite it on Devpost, don't guess).
+2. **Live drill (90 s):** a teammate plays a grandparent on the CRA scenario. The incoming-call screen rings and they answer. They name their bank, the whistle blows, strike 1 lights up, and the score tightens. Then they read out a fake card number: red card, the music cuts, and the scammer drops the act and explains the trick.
+3. **Report card (30 s):** the timeline, "What you did well", the takeaway, and **Replay your drill** playing the call back as music.
+4. **Under the hood (30 s):** open the Ref's view (rules vs AI judge, confidence), show the architecture slide, and if the stretch works, ring a teammate's phone live.
+5. **Close (15 s):** "Nothing is recorded. Five minutes of practice beats a lifetime of savings."
+
+**Product goal (must work):** a browser drill with live strikes, the ref's buzzer and voice, a reveal, and a report card. **Demo goal:** the §0.5 script runs clean twice in a row.
 
 ## 1. Product
 
 Scam Drill is a fire drill for phone scams. A person who opted in talks to an AI scammer, in the browser or on a real phone call. A ref scores the call live in three tiers. When the drill ends, the AI drops the act and explains the tactic that almost worked, then the person gets a report card.
 
-**Demo goal (must work):** a browser drill with live strikes, the ref's buzzer and voice, a reveal, and a report card.
-**Stretch (only if the browser drill works by hour 12):** a real phone call through Twilio, with a live strike dashboard.
+**Must work:** a browser drill with live strikes, the ref's buzzer and voice, a reveal, and a report card.
+**Polish (after sync 2, Agent F):** the visual design system, the incoming-call screen, motion, the Ref's view, and the music from §0.4.
+**Stretch (only if the browser drill works by hour 12):** a real phone call through Twilio, with a live strike dashboard. This is the strongest Complexity and Originality moment, so Agent B goes for it the moment sync 2 says go.
 
 **Out of scope:** user accounts, a database, storing recordings, scheduling drills, mobile apps, translations.
 
@@ -199,6 +245,7 @@ Rules for both implementations:
 | Key | Storage | Written by | Read by | Value |
 |-----|---------|-----------|---------|-------|
 | `scamDrill.result` | `sessionStorage` | F (`drill.js`, `phone.js`) | F (`report.js`) | RevealResult JSON |
+| `scamDrill.music` | `localStorage` | F (`audio/engine.js`) | F | `"on"` or `"off"` (added in 1.1, F only) |
 
 ### 5.9 Environment variables
 
@@ -227,10 +274,10 @@ See `.env.example`. Agents read them through `process.env` only. Server code mus
 | 0 | Kickoff | Everyone has read SPEC.md and their role file, `.env` is filled in, `npm test` passes on every laptop |
 | 6 | **Sync 1** | L: rules and all 3 scenarios merged. B: `voice-client.js` talks to the scammer in a test page. F: drill page works end to end on the mock (`?mock=1`) |
 | 10 | **Sync 2: integration** | B merged. F tests the drill page against the real voice client. **Decision:** if latency is above about 1.5 s or the voice is unstable, cut the phone stretch goal |
-| 14 | Sync 3 | L: judge and ref lines merged. All 4 endings (pass, 3 strikes, autofail, "stop") work in the browser |
-| 18 | Sync 4 | Stretch: a phone drill works with the live dashboard. **Feature freeze** |
-| 18–22 | Bug fixes only | Each agent fixes bugs in its own paths |
-| 22–24 | Rehearsal (humans) | 3 full runs, 2 clean in a row, backup video recorded |
+| 14 | Sync 3 | L: judge and ref lines merged. All 4 endings (pass, 3 strikes, autofail, "stop") work in the browser. F: design system, incoming-call screen, and Ref's view merged |
+| 18 | Sync 4 | Stretch: a phone drill works with the live dashboard. F: tension score, sound identity, and "Replay your drill" merged. **Feature freeze** |
+| 18–22 | Bug fixes only | Each agent fixes bugs in its own paths. **Hour 20:** take the Devpost screenshots (§10) and draft the page |
+| 22–24 | Rehearsal (humans) | Run the §0.5 script 3 times on a speaker, 2 clean in a row. Record the backup video. **Submit on Devpost at least 1 hour before the deadline** |
 
 ## 8. Integration test (run at sync 2, 3, 4)
 
@@ -247,3 +294,14 @@ See `.env.example`. Agents read them through `process.env` only. Server code mus
 2. `npm run check-ownership -- <role>` passes.
 3. Your role file's acceptance checklist is ticked, with any measurements written in `handoff/<role>.md`.
 4. `handoff/<role>.md` says what you built, how to use it, known issues, and any change requests.
+
+## 10. Devpost submission (humans, hour 20 onward)
+
+First impressions count, and the Best Looking judges look at the page before they see the demo.
+- **Prizes to select:** Best Looking Project and Best Inclusion of Music. Not Soloist, not Environmental (§0.1).
+- **Title and tagline:** "Scam Drill: scammers practice on your grandparents every day. We let them practice back."
+- **Video (≤ 3 min, with sound):** the §0.5 script. Make sure the music and the ref are clearly audible.
+- **Screenshots, in this order:** (1) the incoming-call screen, (2) the live drill with 2 strikes lit and the Ref's view open, (3) the reveal, (4) the report card, (5) the landing page. Take them at 1440 px wide in light mode, plus one dark-mode shot.
+- **Sections:** Inspiration (the CAFC stat), What it does, **How we built it** (an architecture diagram covering WebRTC realtime voice → the core → rules + AI judge → ref → SSE, and the phone bridge; this is where Complexity is scored), Challenges (latency, spoken numbers, keeping an AI scammer safe), Accomplishments, What we learned, What's next.
+- **Privacy line:** "Drills are opt-in. Nothing you say is recorded or stored."
+- **At the table:** a speaker, a charged laptop, the backup video downloaded locally, and `?mock=1` ready in a second tab.

@@ -79,6 +79,7 @@ Normalizer: "four five one two" → "4512", "oh" and "zero" → 0, "double five"
 
 ## 3. Ref lines: `src/ref/`
 `scriptFor(action) → { say, sound }` with all text in `src/ref/phrases.js`.
+**Persona:** a warm, steady sports referee (SPEC §0.2 Originality). Lines can borrow light ref language ("That's a strike," "Clean play," "Red card on that one") but stay kind and plain. The reveal is the emotional high point of the demo, so write it to land.
 - `strike_called` → sound `"buzzer"`, say: `"Strike {n}. {what happened}. {why scammers want it}."` For example: "Strike one. You told them your bank. Scammers use that to sound legit."
 - `warning_shown` → `{ say: null, sound: null }`
 - `credit_shown` → `{ say: null, sound: "chime" }`
