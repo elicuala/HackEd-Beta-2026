@@ -1,0 +1,14 @@
+{
+  "bank_fraud": {
+    "agentId": "agent_4001m7bn3sx7efhbp9yanvm7n7r6",
+    "voiceId": "cjVigY5qzO86Huf0OWal"
+  },
+  "cra": {
+    "agentId": "agent_2401m7bn3v3gf3dv1aqe945wv05q",
+    "voiceId": "pNInz6obpgDQGcFmaJgB"
+  },
+  "grandkid": {
+    "agentId": "agent_2501m7bn3wawe0ss59hrddekz1rg",
+    "voiceId": "TX3LPaxmHKxFdv7VOQHJ"
+  }
+}
