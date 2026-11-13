@@ -30,6 +30,34 @@ let score = null;
 let queue = Promise.resolve();
 let errorShown = false;
 
+/** Run a DOM change as a View Transition (morphing cards), or directly when unsupported / reduced motion. */
+function vt(update) {
+  if (!document.startViewTransition || reduced) return update();
+  const t = document.startViewTransition(update);
+  for (const p of [t.ready, t.finished, t.updateCallbackDone]) p.catch(() => {});
+}
+
+const STEPS = ["pick", "answer", "talk", "learn"];
+function setStep(name) {
+  const at = STEPS.indexOf(name);
+  document.querySelectorAll("#steps li").forEach((li) => {
+    const i = STEPS.indexOf(li.dataset.step);
+    if (i === at) li.setAttribute("aria-current", "step");
+    else li.removeAttribute("aria-current");
+    li.classList.toggle("done", i < at);
+  });
+}
+
+/** A brief glow around the screen edge: red for strikes, green for good moves. */
+function flash(kind) {
+  const f = $("flash");
+  if (!f || reduced) return;
+  f.classList.remove("go-flash", "good");
+  void f.offsetWidth; // restart the animation
+  f.classList.add("go-flash");
+  if (kind === "good") f.classList.add("good");
+}
+
 const feed = createFeed($("log"));
 const rv = createRefsView($("rv"));
 const orb = createOrb($("orb"));
@@ -137,19 +165,26 @@ function showError(err) {
   if (errorShown) return;
   errorShown = true;
   stopCallAudio();
-  setStatus("idle");
-  showPanel("pick");
-  $("errorText").textContent = friendly(err);
-  $("playDemo").hidden = useMock;
-  $("errorBox").hidden = false;
-  $("errorBox").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
-  $("retry").focus();
+  vt(() => {
+    setStatus("idle");
+    setStep("pick");
+    showPanel("pick");
+    $("errorText").textContent = friendly(err);
+    $("playDemo").hidden = useMock;
+    $("errorBox").hidden = false;
+    $("errorBox").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+    $("retry").focus();
+  });
 }
 
 // ---------- ringing / declined ----------
 
 function ringNow() {
+  vt(ringNowNow);
+}
+function ringNowNow() {
   resetCall();
+  setStep("answer");
   showPanel("call");
   $("ringBtns").hidden = false;
   $("liveBits").hidden = true;
@@ -161,23 +196,29 @@ function ringNow() {
   orb.start();
   unlock();
   stopRing = ring();
-  $("answer").focus();
+  $("answer").focus({ preventScroll: true });
+  $("callPanel").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 $("start").onclick = ringNow;
 $("decline").onclick = () => {
   stopCallAudio();
-  setStatus("idle");
-  feed.sys("CALL DECLINED");
-  showPanel("declined");
   playSound("chime");
-  $("answerAnyway").focus();
+  flash("good");
+  vt(() => {
+    setStatus("idle");
+    feed.sys("CALL DECLINED");
+    showPanel("declined");
+    $("answerAnyway").focus();
+  });
 };
 $("answerAnyway").onclick = ringNow;
-$("backToPick").onclick = () => {
-  showPanel("pick");
-  $("scen").querySelector("input:checked")?.focus();
-};
+$("backToPick").onclick = () =>
+  vt(() => {
+    setStep("pick");
+    showPanel("pick");
+    $("scen").querySelector("input:checked")?.focus();
+  });
 $("retry").onclick = () => {
   $("errorBox").hidden = true;
   ringNow();
@@ -207,6 +248,7 @@ $("answer").onclick = async () => {
   const my = run;
   stopRing();
   unlock(); // inside the click: lets the browser play sound
+  setStep("talk");
   $("ringBtns").hidden = true;
   $("liveBits").hidden = false;
   $("callerLbl").textContent = "Connecting";
@@ -270,6 +312,7 @@ async function handleActions(actions, my) {
       feed.action({ ...a, say: a.ref?.say });
       if (a.ref?.say) $("refText").textContent = a.ref.say;
       score?.setStrikes(strikes);
+      flash("bad");
       await playRef(a, client);
     } else if (a.type === "warning_shown") {
       rv.add(e);
@@ -283,6 +326,7 @@ async function handleActions(actions, my) {
       $("refText").textContent = `Good move: ${eventName(e).toLowerCase()}.`;
       toast(`Good move: ${eventName(e).toLowerCase()}.`, "good");
       score?.goodDefense();
+      flash("good");
       await playRef(a, client);
     } else if (a.type === "reveal") {
       await reveal(a, my);
@@ -299,6 +343,9 @@ async function reveal(a, my) {
     if (autofail) rv.add(autofail);
     feed.action(a);
     $("refText").textContent = `Red card. ${autofail ? eventName(autofail) + "." : ""}`;
+    flash("bad");
+  } else if (a.outcome === "passed") {
+    flash("good");
   }
   score?.stop();
   setStatus("unmasking");
@@ -322,20 +369,25 @@ async function reveal(a, my) {
   clearInterval(clockTimer);
   setStatus("ended");
   feed.sys("CALL ENDED");
-  showPanel("pick");
   const host = $("report");
-  host.hidden = false;
-  renderReport(host, a, {
-    onAgain: () => {
-      host.hidden = true;
-      setStatus("idle");
-      $("scen").querySelector("input:checked")?.focus();
-      scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-    },
+  vt(() => {
+    setStep("learn");
+    showPanel("pick");
+    host.hidden = false;
+    renderReport(host, a, {
+      onAgain: () =>
+        vt(() => {
+          host.hidden = true;
+          setStatus("idle");
+          setStep("pick");
+          $("scen").querySelector("input:checked")?.focus();
+          scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+        }),
+    });
+    host.querySelector("h2")?.setAttribute("tabindex", "-1");
+    host.querySelector("h2")?.focus({ preventScroll: true });
   });
-  host.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
-  host.querySelector("h2")?.setAttribute("tabindex", "-1");
-  host.querySelector("h2")?.focus({ preventScroll: true });
+  setTimeout(() => host.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }), reduced ? 0 : 450);
 }
 
 setStatus("idle");

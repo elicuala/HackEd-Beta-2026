@@ -1,28 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Live board · Scam Drill</title>
 <meta name="description" content="Watch practice scam calls happen live: the conversation, the ref's calls, and the unmask.">
-<link rel="stylesheet" href="/css/desk.css">
+<script>(()=>{try{const t=localStorage.getItem("scamDrill.theme")||"auto",s=Number(localStorage.getItem("scamDrill.textSize"))||1;document.documentElement.dataset.theme=t==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.style.setProperty("--scale",s)}catch(e){}})()</script>
+<link rel="preload" href="/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<div class="aurora" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to content</a>
+<div class="aurora" aria-hidden="true"><i></i><i></i></div>
+<div class="grain" aria-hidden="true"></div>
 <div class="page">
-<header class="nav"><div class="wrap">
-  <span class="brand"><i aria-hidden="true"></i>SCAM DRILL</span>
+<header class="nav wrap"><div class="nav-bar refract">
+  <a class="brand" href="/"><i aria-hidden="true"></i>SCAM DRILL</a>
   <div class="nav-right">
     <nav aria-label="Main">
       <a href="/">Drill</a>
       <a href="/live.html" aria-current="page"><span class="dot-live" aria-hidden="true"></span>Live board</a>
-      <a href="/phone.html">Phone drill</a>
+      <a href="/phone.html">Phone</a>
     </nav>
     <span class="chip" id="conn" data-s="connecting" role="status"><i></i><span id="connText">Connecting</span></span>
+    <div class="tools"></div>
   </div>
 </div></header>
 
-<main class="wrap">
+<main class="wrap" id="main">
   <div class="hero" style="padding-block:40px 28px">
     <span class="kicker">Live board · numbers always hidden</span>
     <h1>Watch the drills <span>as they happen.</span></h1>
@@ -58,6 +64,7 @@
 </main>
 <footer><div class="wrap">Only drills whose caller ticked "Show on the live board" appear here. Digits and spoken numbers are hidden. Nothing is recorded: drills drop off the board 15 minutes after they end.</div></footer>
 </div>
+<script type="module" src="/js/ui/prefs.js"></script>
 <script type="module" src="/js/live.js"></script>
 </body>
 </html>
