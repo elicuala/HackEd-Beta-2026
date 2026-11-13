@@ -5,10 +5,6 @@ export const SCENARIO_UI = {
     icon: '<path d="M4 20h16M6 17v-7M10 17v-7M14 17v-7M18 17v-7M3 9l9-5 9 5z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round" stroke-linecap="round"/>',
     habit: "Hang up and call the CRA using the number on its official website.",
   },
-  grandkid: {
-    icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/>',
-    habit: "Hang up and call your grandchild or another family member on a number you already know.",
-  },
   bank_fraud: {
     icon: '<rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M3 10.5h18M7 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
     habit: "Hang up and call the number on the back of your card.",

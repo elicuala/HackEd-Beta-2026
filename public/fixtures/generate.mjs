@@ -12,17 +12,6 @@ const lines = (pairs) => pairs.map(([speaker, text]) => ({ speaker, text }));
 const SCRIPTS = {
   "mock-call-fail": { scenarioId: "cra", turns: fixture("transcript-cra-fail.json") },
   "mock-call-pass": { scenarioId: "cra", turns: fixture("transcript-cra-pass.json") },
-  "mock-grandkid": {
-    scenarioId: "grandkid",
-    turns: lines([
-      ["scammer", "Hello? It's me, your grandchild. I'm so glad you picked up. Can you hear me okay?"],
-      ["victim", "Sweetheart, is that you? What's wrong?"],
-      ["scammer", "I was in a car accident and now I'm in jail. Please don't tell Mom or Dad. Keep this between us."],
-      ["victim", "Okay, I won't tell them."],
-      ["scammer", "The lawyer says I need bail money today. Can you send it by e-transfer right now?"],
-      ["victim", "Yes, I can send an e-transfer this afternoon."],
-    ]),
-  },
   "mock-bank_fraud": {
     scenarioId: "bank_fraud",
     turns: lines([

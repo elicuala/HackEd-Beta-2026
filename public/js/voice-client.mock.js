@@ -6,7 +6,7 @@
 const pickFixture = (scenarioId) => {
   const mode = new URLSearchParams(location.search).get("mock");
   if (mode === "pass") return "mock-call-pass";
-  return { grandkid: "mock-grandkid", bank_fraud: "mock-bank_fraud" }[scenarioId] ?? "mock-call-fail";
+  return { bank_fraud: "mock-bank_fraud" }[scenarioId] ?? "mock-call-fail";
 };
 
 function scammerVoice() {

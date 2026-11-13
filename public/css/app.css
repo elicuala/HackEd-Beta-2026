@@ -258,7 +258,7 @@ details.card>summary small{display:block;font-weight:400;font-size:.87rem;color:
 
 /* idle welcome on the stage */
 .welcome{max-width:560px;text-align:center;display:grid;gap:14px;justify-items:center;animation:pane-in .5s var(--ease) both}
-.welcome-icon{width:96px;height:96px;border-radius:28px;display:grid;place-items:center;background:var(--accent-fill);color:#fff;box-shadow:0 18px 40px -12px color-mix(in srgb,var(--accent) 60%,transparent)}
+.welcome-icon{width:96px;height:96px;border-radius:28px;display:grid;place-items:center;background:var(--accent-fill);color:#fff}
 .welcome-icon svg{width:48px;height:48px}
 .kicker{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink)}
 .welcome h1,.welcome h2{margin:0;font:700 clamp(1.8rem,3.4vw,2.6rem)/1.1 var(--font-display);letter-spacing:-.03em;text-wrap:balance}
