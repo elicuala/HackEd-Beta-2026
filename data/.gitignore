@@ -1,0 +1,3 @@
+# Local SQLite files. Never commit them.
+*
+!.gitignore
