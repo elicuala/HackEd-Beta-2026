@@ -91,3 +91,8 @@ export const GENERIC_DEFENSE = "You stayed calm, questioned me, and gave me noth
 
 /** They ended the call without a good_defense event. */
 export const ENDED_EARLY = "You ended the call before I could finish my trick.";
+
+/** The drill ended because they pushed back enough times (the pushback counter), not because they hung up. */
+export const PUSHED_BACK = "You kept pushing back, and that's exactly the right thing to do.";
+export const PUSHED_BACK_CLOSE =
+  "If this were a real scam call, don't wait for them to give up: hang up, then call the official number yourself.";

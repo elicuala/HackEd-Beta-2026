@@ -132,6 +132,10 @@ describe("voice routes", () => {
     const reveal = third.actions.find((a) => a.type === "reveal");
     assert.ok(reveal, "the mask comes off on the third pushback");
     assert.equal(reveal.outcome, "passed");
+    // They pushed back; they didn't hang up. Praise that, and tell them to hang up on a real one.
+    assert.match(reveal.ref.say, /You kept pushing back, and that's exactly the right thing to do\./);
+    assert.match(reveal.ref.say, /hang up, then call the official number yourself\.$/);
+    assert.doesNotMatch(reveal.ref.say, /ended the call/);
     assert.notEqual(getCall(callId).status, "live");
   });
 

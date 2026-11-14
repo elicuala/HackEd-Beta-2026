@@ -3,8 +3,18 @@
 // All the wording lives in phrases.js.
 import {
   STRIKE_NUMBERS, STRIKE_PHRASES, GENERIC_STRIKE, REVEAL, TRICK_SETUPS, GENERIC_SETUP,
-  TRICK_PAYOFFS, GENERIC_PAYOFF, GOOD_DEFENSES, GENERIC_DEFENSE, ENDED_EARLY,
+  TRICK_PAYOFFS, GENERIC_PAYOFF, GOOD_DEFENSES, GENERIC_DEFENSE, ENDED_EARLY, PUSHED_BACK, PUSHED_BACK_CLOSE,
 } from "./phrases.js";
+
+// Calls that are about to end because the person pushed back enough times (src/voice/pushback.js marks them
+// right before ending the call). Their "passed" unmask praises the pushing back instead of "you ended the call",
+// and suggests hanging up, since they didn't.
+const passedByPushback = new Set();
+
+/** Mark a call so its next "passed" reveal uses the pushback wording. */
+export function markPassedByPushback(callId) {
+  if (typeof callId === "string" && callId) passedByPushback.add(callId);
+}
 
 const REVEAL_SOUND = { failed_autofail: "red_card", failed_strikes: "chime", passed: "fanfare" };
 
@@ -35,6 +45,7 @@ function failedLine(action) {
 }
 
 function passedLine(action) {
+  if (passedByPushback.delete(action.callId)) return `${REVEAL.passedOpen} ${PUSHED_BACK} ${PUSHED_BACK_CLOSE}`;
   const defense = lastOfTier(action.events, "good_defense");
   const praise = defense ? pick(GOOD_DEFENSES, defense.type, GENERIC_DEFENSE) : ENDED_EARLY;
   return `${REVEAL.passedOpen} ${praise} ${REVEAL.passedClose}`;

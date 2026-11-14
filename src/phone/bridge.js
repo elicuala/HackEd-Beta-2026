@@ -10,7 +10,7 @@ import { getScenario } from "../scenarios/index.js";
 import { voiceConfig, realtimeSession, scammerInstructions } from "../voice/config.js";
 import { toneMulaw } from "./mulaw.js";
 import { afterTurn } from "../voice/pushback.js";
-import { unmaskInstructions, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "../../public/js/unmask-prompt.js";
+import { unmaskInstructions, speakingTimeMs, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "../../public/js/unmask-prompt.js";
 
 const REALTIME_WS_URL = "wss://api.openai.com/v1/realtime";
 const RESPONSE_TIMEOUT_MS = 12000;
@@ -88,12 +88,16 @@ export function bridgeCall(twilioWs, deps) {
     });
   }
 
+  // Waits around a spoken line grow with the line, so a long unmask is never cut off or asked for twice.
+  // (Tests pass their own short timeouts; those are used as they are.)
+  const fit = (base, ms) => (deps.timeouts ? base : Math.max(base, ms));
+
   /** Resolves when Twilio has played everything sent before this mark. */
-  function playbackDone() {
+  function playbackDone(waitMs = playbackTimeout) {
     const name = `m${++markSeq}`;
     const p = new Promise((resolve) => markWaiters.set(name, resolve));
     toTwilio({ event: "mark", streamSid, mark: { name } });
-    return Promise.race([p, timeout(playbackTimeout, false)]).finally(() => markWaiters.delete(name));
+    return Promise.race([p, timeout(waitMs, false)]).finally(() => markWaiters.delete(name));
   }
 
   function playTone(sound) {
@@ -102,7 +106,8 @@ export function bridgeCall(twilioWs, deps) {
   }
 
   /** Out-of-band spoken line (doesn't enter the scammer's conversation). Resolves after it's played. */
-  async function speak(kind, instructions) {
+  async function speak(kind, instructions, line = "") {
+    const lineMs = speakingTimeMs(line);
     let spoken = false;
     for (let attempt = 0; attempt < 2 && !spoken && phase !== "closed"; attempt++) {
       const tag = `${kind}-${++tagSeq}`;
@@ -112,11 +117,11 @@ export function bridgeCall(twilioWs, deps) {
       pendingSpeak = { tag, request, retries: 0 };
       request();
       // true only if the response completed and sent audio (a failed or empty one is asked for once more)
-      spoken = (await Promise.race([done, timeout(responseTimeout, false)])) === true && spokeAudio.has(tag);
+      spoken = (await Promise.race([done, timeout(fit(responseTimeout, lineMs), false)])) === true && spokeAudio.has(tag);
       if (pendingSpeak?.tag === tag) pendingSpeak = null;
       doneWaiters.delete(tag);
     }
-    await playbackDone();
+    await playbackDone(fit(playbackTimeout, lineMs + 5000)); // hang up only once the phone has played all of it
     return spoken;
   }
 
@@ -158,7 +163,7 @@ export function bridgeCall(twilioWs, deps) {
       clearPhone();
       playTone(a.ref?.sound);
       if (say) {
-        const spoken = await speak("unmask", unmaskInstructions(say));
+        const spoken = await speak("unmask", unmaskInstructions(say), say);
         // The caller's voice couldn't say it (the voice service failed): the phone provider reads it instead,
         // so the person always hears that this was a drill before the line drops.
         if (!spoken && (await sayThenHangUp(say))) return;

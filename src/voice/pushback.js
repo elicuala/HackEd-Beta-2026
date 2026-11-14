@@ -9,6 +9,7 @@
 import { getCall, endCall } from "../core/calls.js";
 import { publish, subscribe } from "../core/bus.js";
 import { isPushback } from "../rules/agreement.js";
+import { markPassedByPushback } from "../ref/index.js";
 
 export const PUSHBACK_LIMIT = 3;
 
@@ -39,7 +40,9 @@ export async function afterTurn(callId, turn, actions, { limit = PUSHBACK_LIMIT 
   counts.set(callId, count);
   publish(callId, "pushbacks", { count, limit });
   if (count < limit) return { actions: list, pushbacks: count };
-  // That's enough: the caller gives up and the mask comes off.
+  // That's enough: the caller gives up and the mask comes off. The unmask praises the pushing back (not "you
+  // ended the call", since they didn't) and tells them to hang up on a real one.
+  markPassedByPushback(callId);
   return { actions: [...list, ...(await endCall(callId))], pushbacks: count };
 }
 

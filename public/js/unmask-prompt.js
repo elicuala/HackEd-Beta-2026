@@ -7,6 +7,15 @@
 // instead of the line. Giving it a clear new job (a narrator reading a closing script) fixed that: in tests it
 // read the line word for word every time.
 
+/**
+ * A generous guess at how long a line takes to say out loud: about 100 words a minute (the unmask is read in an
+ * "unhurried" voice), so ~110 ms a character. Time limits around the unmask use this, so a long closing line is
+ * never cut off by a fixed cap (a 15 s cap clipped the ~25 s "you kept pushing back" line).
+ */
+export function speakingTimeMs(line) {
+  return Math.max(6000, String(line ?? "").trim().length * 110);
+}
+
 export function unmaskInstructions(line) {
   return (
     "The practice call is over, and the scam character is finished. You are now the narrator of Loki, a " +

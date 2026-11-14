@@ -6,7 +6,7 @@
 
 const TURN_RETRY_MS = 300;
 
-import { saidGoodbye, keepGoingNudge, MIN_CALL_MS } from "./unmask-prompt.js";
+import { saidGoodbye, keepGoingNudge, MIN_CALL_MS, speakingTimeMs } from "./unmask-prompt.js";
 
 const redact = (text) => String(text ?? "").replace(/\d/g, "•");
 const codeError = (code) => Object.assign(new Error(code), { code });
@@ -261,7 +261,8 @@ export function createElevenLabsCall(ctx) {
         resolve(ok);
       };
       const startTimer = setTimeout(() => !started && settle(false), ctx.unmaskStartMs);
-      const maxTimer = setTimeout(() => settle(started), ctx.unmaskMaxMs);
+      // Long enough for the whole line (a fixed cap cut long closing messages off).
+      const maxTimer = setTimeout(() => settle(started), Math.max(ctx.unmaskMaxMs, ctx.unmaskStartMs + speakingTimeMs(line)));
 
       (async () => {
         const res = await ctx.fetch("/api/voice/unmask", {

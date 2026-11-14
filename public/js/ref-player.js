@@ -46,7 +46,7 @@ export function speak(text) {
       u.onerror = finish;
       speechSynthesis.cancel();
       speechSynthesis.speak(u);
-      setTimeout(finish, Math.max(2500, text.length * 80));
+      setTimeout(finish, Math.max(2500, text.length * 110)); // never cut a long line short
     } catch {
       toast(text, "", Math.max(4000, text.length * 70));
       setTimeout(finish, 1200);

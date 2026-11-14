@@ -136,3 +136,14 @@ test("ref: works on the shared reveal fixtures", () => {
     checkSay(say, 50, f);
   }
 });
+
+test("passed by pushing back: praises the pushback and says to hang up on a real call (only for that call)", async () => {
+  const { markPassedByPushback } = await import("./index.js");
+  const action = (callId) => ({ type: "reveal", callId, outcome: "passed", scenarioId: "cra", events: [] });
+  markPassedByPushback("call-p");
+  const pushed = scriptFor(action("call-p")).say;
+  assert.ok(pushed.includes(phrases.PUSHED_BACK) && pushed.endsWith(phrases.PUSHED_BACK_CLOSE), pushed);
+  assert.ok(!pushed.includes(phrases.ENDED_EARLY), pushed);
+  assert.ok(scriptFor(action("call-p")).say.includes(phrases.ENDED_EARLY), "the mark is used once");
+  assert.ok(scriptFor(action("call-other")).say.includes(phrases.ENDED_EARLY), "other calls are unchanged");
+});

@@ -8,7 +8,7 @@
 //   deps:     test seam only; production code passes nothing.
 
 import { createElevenLabsCall } from "./voice-client.elevenlabs.js";
-import { unmaskInstructions, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "./unmask-prompt.js";
+import { unmaskInstructions, speakingTimeMs, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "./unmask-prompt.js";
 
 const ELEVENLABS_CLIENT_URL = "/vendor/elevenlabs-client.mjs";
 const UNMASK_FETCH_START_MS = 8000; // ElevenLabs unmask: text-to-speech round trip plus the start of playback
@@ -59,6 +59,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     revealCloseMs: deps.revealCloseMs ?? REVEAL_CLOSE_MS,
     unmaskStartMs: deps.unmaskStartMs ?? UNMASK_START_MS,
     unmaskMaxMs: deps.unmaskMaxMs ?? UNMASK_MAX_MS,
+    fitUnmaskToLine: deps.unmaskMaxMs === undefined, // tests pin their own short limit
     unmaskRetryMs: deps.unmaskRetryMs ?? UNMASK_RETRY_MS,
     goodbyeEndMs: deps.goodbyeEndMs ?? GOODBYE_END_MS,
     minCallMs: deps.minCallMs ?? MIN_CALL_MS,
@@ -616,7 +617,12 @@ export function createVoiceClient(handlers = {}, deps = {}) {
         startTimer: setTimeout(() => {
           if (unmaskWaiter && !unmaskWaiter.started) settleUnmask(false);
         }, env.unmaskStartMs),
-        maxTimer: setTimeout(() => settleUnmask(unmaskWaiter?.started ?? false), env.unmaskMaxMs),
+        // A safety net only (the line normally ends on output_audio_buffer.stopped): long enough for the whole line,
+        // so a long closing message is never cut off.
+        maxTimer: setTimeout(
+          () => settleUnmask(unmaskWaiter?.started ?? false),
+          Math.max(env.unmaskMaxMs, env.fitUnmaskToLine ? env.unmaskStartMs + speakingTimeMs(line) : 0),
+        ),
       };
       stopScammerAudio();
       scammerPaused = false; // the speaker stays muted until the unmask's own audio starts (output_audio_buffer.started)

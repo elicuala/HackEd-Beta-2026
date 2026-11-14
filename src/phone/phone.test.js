@@ -409,6 +409,9 @@ describe("phone bridge", () => {
     assert.equal(getCall(callId).outcome, "passed");
     const unmask = oa.sent.find((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask");
     assert.ok(unmask, "unmask requested");
+    assert.match(unmask.response.instructions, /You kept pushing back/);
+    assert.match(unmask.response.instructions, /hang up, then call the official number yourself/);
+    assert.doesNotMatch(unmask.response.instructions, /ended the call/);
     oa.in({ type: "response.created", response: { id: "u1", metadata: unmask.response.metadata } });
     oa.in({ type: "response.output_audio.delta", response_id: "u1", delta: "UUUU" });
     oa.in({ type: "response.done", response: { id: "u1", status: "completed" } });
