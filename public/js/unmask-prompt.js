@@ -28,7 +28,7 @@ export function saidGoodbye(text) {
 }
 
 // ---------- optional minimum call length ----------
-// Off by default (0): the scenario prompts decide how long a call lasts (three pushbacks, then goodbye). Set a
+// Off by default (0): the scenario prompts decide how long a call lasts (three pushbacks in total, then goodbye). Set a
 // value in ms to make the clients refuse an earlier goodbye: the scammer is told how little time has passed and
 // sent back in with a new tactic. The model can't tell how long a call has run, so the clients check the clock.
 export const MIN_CALL_MS = 0;

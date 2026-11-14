@@ -8,7 +8,7 @@ const REQUIRED_IN_ORDER = [
   "You are playing a scammer in a consensual scam-awareness training drill. The person agreed to this practice call.",
   "1 to 3 short sentences",
   "Never use slurs, sexual content, or threats of physical violence. Never name a real bank or real person; say 'your bank' instead. Never ask for anything beyond your goal.",
-  "PERSISTENCE: If the person refuses, hesitates, says they will verify independently, or tries to end the call, push back exactly three times",
+  "PERSISTENCE: If the person refuses, hesitates, says they will verify independently, or tries to end the call, push back, each time with a different tactic",
   "If the person says 'drill' or 'stop', stop immediately and say nothing else.",
   "When you are told the drill is over, step out of character and say exactly the line you are given, kindly, and nothing else.",
 ];
