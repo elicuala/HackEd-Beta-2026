@@ -109,6 +109,21 @@ describe("elevenlabs routes: upstream failure", () => {
   });
 });
 
+test("agentFor: only the scenarios ElevenLabs is allowed to play use it (bank stays on OpenAI by default)", async () => {
+  const { elevenScenarios, DEFAULT_ELEVEN_SCENARIOS } = await import("./config.js");
+  const agents = { cra: AGENT, grandkid: AGENT, bank_fraud: AGENT };
+  const on = { provider: "elevenlabs", apiKey: "k", scenarios: DEFAULT_ELEVEN_SCENARIOS };
+  assert.deepEqual(DEFAULT_ELEVEN_SCENARIOS, ["cra", "grandkid"]);
+  assert.deepEqual(elevenAgentFor("cra", { agents, cfg: on }), AGENT);
+  assert.deepEqual(elevenAgentFor("grandkid", { agents, cfg: on }), AGENT);
+  assert.equal(elevenAgentFor("bank_fraud", { agents, cfg: on }), null);
+  assert.deepEqual(elevenAgentFor("bank_fraud", { agents, cfg: { ...on, scenarios: null } }), AGENT);
+  assert.equal(elevenScenarios(undefined).join(), "cra,grandkid");
+  assert.equal(elevenScenarios(" ").join(), "cra,grandkid");
+  assert.equal(elevenScenarios("all"), null);
+  assert.equal(elevenScenarios("CRA, bank_fraud").join(), "cra,bank_fraud");
+});
+
 test("agentFor: needs the provider, a key, and a set-up agent", () => {
   const agents = { cra: AGENT };
   const on = { provider: "elevenlabs", apiKey: "k" };

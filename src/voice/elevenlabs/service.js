@@ -14,6 +14,7 @@ function getClient() {
 /** The agent for a scenario when ElevenLabs is set up and selected, else null (the caller falls back to OpenAI). */
 export function elevenAgentFor(scenarioId, { agents = loadAgents(), cfg = elevenConfig() } = {}) {
   if (cfg.provider !== "elevenlabs" || !cfg.apiKey) return null;
+  if (cfg.scenarios && !cfg.scenarios.includes(scenarioId)) return null; // this one stays on OpenAI
   const agent = agents[scenarioId];
   return agent?.agentId && agent?.voiceId ? agent : null;
 }

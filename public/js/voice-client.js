@@ -447,6 +447,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
           now: env.now,
           loadClient: env.loadElevenLabs,
           revealCloseMs: env.revealCloseMs,
+          goodbyeEndMs: env.goodbyeEndMs,
           unmaskStartMs: env.elevenUnmaskStartMs,
           unmaskMaxMs: env.unmaskMaxMs,
         });

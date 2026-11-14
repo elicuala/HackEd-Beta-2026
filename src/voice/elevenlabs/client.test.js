@@ -168,3 +168,29 @@ test("elevenlabs: a dropped connection mid-call is CONNECTION_LOST", async () =>
   assert.deepEqual(log.errors, ["CONNECTION_LOST"]);
   assert.equal(log.statuses.at(-1), "ended");
 });
+
+test("elevenlabs: the scammer says goodbye → the drill ends once that line has played", async () => {
+  const { client, log, conv } = setup();
+  await client.start("cra");
+  const ends = () => log.posted.filter((p) => p.path === "/api/voice/end").length;
+  log.opts.onMessage({ role: "agent", message: "Fine. Suit yourself. Goodbye." });
+  log.opts.onModeChange({ mode: "speaking" });
+  await tick();
+  assert.equal(ends(), 0); // still saying it
+  log.opts.onModeChange({ mode: "listening" });
+  await until(() => ends() === 1);
+  assert.ok(log.actions.some((a) => a.type === "reveal"));
+  assert.equal(conv.ended, true);
+});
+
+test("elevenlabs: a goodbye mid-sentence, or a stale 'listening' before it speaks, doesn't end the drill", async () => {
+  const { client, log } = setup();
+  await client.start("cra");
+  log.opts.onMessage({ role: "agent", message: "Don't say goodbye yet. Which bank do you use?" });
+  log.opts.onModeChange({ mode: "speaking" });
+  log.opts.onModeChange({ mode: "listening" });
+  log.opts.onMessage({ role: "agent", message: "Okay. Goodbye." });
+  log.opts.onModeChange({ mode: "listening" }); // arrives before it starts speaking
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(log.posted.filter((p) => p.path === "/api/voice/end").length, 0);
+});

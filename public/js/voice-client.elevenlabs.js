@@ -6,6 +6,8 @@
 
 const TURN_RETRY_MS = 300;
 
+import { saidGoodbye } from "./unmask-prompt.js";
+
 const redact = (text) => String(text ?? "").replace(/\d/g, "•");
 const codeError = (code) => Object.assign(new Error(code), { code });
 
@@ -33,6 +35,8 @@ export function createElevenLabsCall(ctx) {
   let unmaskAudio = null;
   let unmaskUrl = null;
   let reported = null;
+  let goodbye = 0; // 0: no, 1: the scammer signed off (waiting for its audio), 2: its goodbye is playing
+  let goodbyeTimer = null;
 
   const idleStatus = () => {
     if (phase === "live") setStatus(refSpeaking ? "ref_speaking" : agentSpeaking && !paused ? "scammer_speaking" : "live");
@@ -53,6 +57,14 @@ export function createElevenLabsCall(ctx) {
     safely(() => conv.setMicMuted(paused || refSpeaking || phase !== "live"));
   }
 
+  /** The scammer's goodbye has finished playing → end the drill (the server reveals "passed"). */
+  function endAfterGoodbye() {
+    if (!goodbye) return;
+    goodbye = 0;
+    clearTimeout(goodbyeTimer);
+    if (phase === "live") end();
+  }
+
   function stopConversation() {
     const c = conv;
     conv = null;
@@ -63,6 +75,7 @@ export function createElevenLabsCall(ctx) {
     if (phase === "ended") return;
     phase = "ended";
     clearTimeout(revealTimer);
+    clearTimeout(goodbyeTimer);
     stopConversation();
     if (unmaskAudio) {
       safely(() => unmaskAudio.pause());
@@ -166,8 +179,14 @@ export function createElevenLabsCall(ctx) {
         onMessage: (m) => {
           const role = m?.role ?? (m?.source === "ai" ? "agent" : "user");
           addTurn(role === "agent" ? "scammer" : "victim", m?.message);
+          if (role === "agent" && phase === "live" && !goodbye && saidGoodbye(m?.message)) {
+            goodbye = agentSpeaking ? 2 : 1;
+            goodbyeTimer = setTimeout(endAfterGoodbye, ctx.goodbyeEndMs ?? 8000); // never wait forever
+          }
         },
         onModeChange: ({ mode } = {}) => {
+          if (mode === "speaking" && goodbye === 1) goodbye = 2;
+          if (mode === "listening" && goodbye === 2) setTimeout(endAfterGoodbye, 0);
           agentSpeaking = mode === "speaking";
           if (phase === "live") debug(agentSpeaking ? "scammer_audio_started" : "scammer_audio_stopped");
           idleStatus();

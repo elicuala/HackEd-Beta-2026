@@ -33,9 +33,24 @@ export function loadAgents(file = AGENTS_FILE) {
   }
 }
 
+/**
+ * Scenarios that use ElevenLabs when it's the provider. The bank agent is left out because ElevenLabs' safety
+ * check still blocks it (calls connect and then drop), so it stays on OpenAI. Set ELEVENLABS_SCENARIOS in .env
+ * to change this: a comma list like "cra,grandkid,bank_fraud", or "all" once ElevenLabs lifts the block.
+ */
+export const DEFAULT_ELEVEN_SCENARIOS = ["cra", "grandkid"];
+
+export function elevenScenarios(raw = process.env.ELEVENLABS_SCENARIOS) {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (text === "all") return null; // no filter
+  const list = text.split(",").map((s) => s.trim()).filter(Boolean);
+  return list.length ? list : DEFAULT_ELEVEN_SCENARIOS;
+}
+
 export function elevenConfig() {
   return {
     apiKey: (process.env.ELEVENLABS_API_KEY ?? "").trim(),
+    scenarios: elevenScenarios(),
     // OpenAI Realtime plays the scammer by default. VOICE_PROVIDER=elevenlabs switches to the ElevenLabs agents,
     // but ElevenLabs' safety review blocked them, so leave this unset unless ElevenLabs approves them.
     provider: (process.env.VOICE_PROVIDER ?? "").trim().toLowerCase() || "openai",

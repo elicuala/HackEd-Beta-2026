@@ -5,6 +5,7 @@
 import { writeFileSync } from "node:fs";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { listScenarios, getScenario } from "../../scenarios/index.js";
+import { scammerInstructions } from "../config.js"; // the scenario prompt plus the shared drill rules (stay in character, sounds)
 import { AGENTS_FILE, SCENARIO_VOICES, AGENT_LLM, AGENT_TTS_MODEL, loadAgents, elevenConfig } from "./config.js";
 
 if (!elevenConfig().apiKey) {
@@ -30,7 +31,7 @@ function agentBody(scenario, voice, privacy) {
       agent: {
         firstMessage: scenario.opening_line,
         language: "en",
-        prompt: { prompt: scenario.system_prompt, llm: AGENT_LLM, temperature: 0.7 },
+        prompt: { prompt: scammerInstructions(scenario.system_prompt), llm: AGENT_LLM, temperature: 0.7 },
       },
       tts: { voiceId: voice.voiceId, modelId: AGENT_TTS_MODEL },
     },
