@@ -200,8 +200,8 @@ test("elevenlabs: a goodbye mid-sentence, or a stale 'listening' before it speak
   assert.equal(log.posted.filter((p) => p.path === "/api/voice/end").length, 0);
 });
 
-test("elevenlabs: a goodbye in the first minute doesn't end the call; the agent is nudged to keep going", async () => {
-  const { client, log, conv } = setup(); // default minimum: 60 s
+test("elevenlabs: with a minimum call length set, an early goodbye doesn't end the call; the agent is nudged", async () => {
+  const { client, log, conv } = setup({ minCallMs: 60000 });
   await client.start("cra");
   log.opts.onMessage({ role: "agent", message: "Fine. Goodbye." });
   log.opts.onModeChange({ mode: "speaking" });

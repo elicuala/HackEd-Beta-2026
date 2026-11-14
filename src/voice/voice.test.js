@@ -412,9 +412,9 @@ describe("voice client", () => {
     assert.equal(ends(), 1); // only once
   });
 
-  test("a goodbye in the first minute: the scammer is sent back in (three times), and then may end the drill", async () => {
+  test("with a minimum call length set, an early goodbye sends the scammer back in (three times), then may end the drill", async () => {
     const f = fakeEnv({ endActions: () => [reveal("passed")] });
-    const client = createVoiceClient(f.handlers, f.deps); // default minimum: 60 s
+    const client = createVoiceClient(f.handlers, { ...f.deps, minCallMs: 60000 });
     await client.start("cra");
     const ends = () => f.posts.filter((x) => x.url === "/api/voice/end").length;
     const nudges = () => f.dc.sent.filter((e) => e.type === "conversation.item.create" && e.item.role === "system");

@@ -342,8 +342,8 @@ describe("phone bridge", () => {
     assert.equal(tw.closed, true);
   });
 
-  test("a goodbye in the first minute doesn't end the call: the scammer is sent back in with a new tactic", async () => {
-    const { oa, callId, hangups } = setupBridge(); // default minimum: 60 s
+  test("with a minimum call length set, an early goodbye doesn't end the call: the scammer is sent back in with a new tactic", async () => {
+    const { oa, callId, hangups } = setupBridge({ minCallMs: 60000 });
     const sign = (n) => {
       oa.in({ type: "response.created", response: { id: "g" + n, metadata: { kind: "reply" } } });
       oa.in({ type: "response.output_audio_transcript.done", response_id: "g" + n, transcript: "Fine. Goodbye." });
