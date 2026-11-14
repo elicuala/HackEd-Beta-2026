@@ -1,5 +1,5 @@
 // Owned by Agent F. The conversation feed, the Ref's view, and the strike meter, shared by the drill page,
-// the phone dashboard, and the live board. All text goes in with textContent (never innerHTML).
+// and the phone dashboard. All text goes in with textContent (never innerHTML).
 import { TIER, DOWN, NUM, eventName, fmt } from "../content.js";
 
 const el = (tag, cls, text) => {

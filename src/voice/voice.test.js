@@ -59,8 +59,7 @@ describe("voice routes", () => {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("cache-control"), "no-store");
     const body = await res.json();
-    assert.deepEqual(Object.keys(body).sort(), ["callId", "clientSecret", "model", "openingLine", "voice", "watchId"]);
-    assert.equal(body.watchId, null); // not shared unless asked
+    assert.deepEqual(Object.keys(body).sort(), ["callId", "clientSecret", "model", "openingLine", "voice"]);
     assert.equal(body.clientSecret, "ek_test");
     assert.ok(body.openingLine.length > 0);
     assert.equal(getCall(body.callId).channel, "browser");
@@ -285,7 +284,7 @@ describe("voice client", () => {
   test("start: connecting → live, echo-cancelled mic, scammer opens with the opening line", async () => {
     const f = fakeEnv();
     const client = createVoiceClient(f.handlers, f.deps);
-    assert.deepEqual(await client.start("cra"), { callId: "call-1", watchId: null });
+    assert.deepEqual(await client.start("cra"), { callId: "call-1" });
     assert.deepEqual(f.log.status, ["connecting", "live"]);
     assert.equal(f.mic().audio.echoCancellation, true);
     const open = f.dc.sent.find((e) => e.type === "response.create");

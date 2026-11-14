@@ -3,6 +3,7 @@
 // Twilio → OpenAI: caller audio (μ-law, base64) is appended to the input buffer (not while the ref talks).
 // OpenAI → Twilio: scammer / ref / unmask audio deltas become Twilio media frames.
 // Finished transcripts → processTurn (same rules as the browser). Actions → tones, the ref, the unmask, hang-up.
+// "Take over call": takeOver(ws) drops the AI and relays phone audio ⇄ the requester's browser instead (phase "human").
 import WebSocket from "ws";
 import { getCall, processTurn, endCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
@@ -30,7 +31,10 @@ export function openRealtimeSocket({ model, apiKey }) {
  *   openRealtime({ model, apiKey }) → ws    // optional, for tests
  *   now() → ms                              // optional, for tests
  *   timeouts?                               // optional, for tests
+ *   onStarted(callId)                       // optional: the stream is up and the drill is live
+ *   onClosed(callId)                        // optional: the bridge is gone
  * }
+ * @returns {{ phase, callId, takeOver(ws) → boolean }}
  */
 export function bridgeCall(twilioWs, deps) {
   const openRealtime = deps.openRealtime ?? openRealtimeSocket;
@@ -38,7 +42,8 @@ export function bridgeCall(twilioWs, deps) {
   const responseTimeout = deps.timeouts?.response ?? RESPONSE_TIMEOUT_MS;
   const playbackTimeout = deps.timeouts?.playback ?? PLAYBACK_TIMEOUT_MS;
 
-  let phase = "waiting"; // waiting → live → revealed → closed
+  let phase = "waiting"; // waiting → live → (human) → revealed → closed
+  let human = null; // the requester's browser socket once they took over the call
   let callId = null;
   let callSid = null;
   let streamSid = null;
@@ -61,7 +66,11 @@ export function bridgeCall(twilioWs, deps) {
   const toOpenAI = (ev) => {
     if (oa && oa.readyState === 1) oa.send(JSON.stringify(ev));
   };
+  const toHuman = (msg) => {
+    if (human && human.readyState === 1) human.send(JSON.stringify(msg));
+  };
   const clearPhone = () => toTwilio({ event: "clear", streamSid });
+  const onLine = () => phase === "live" || phase === "human";
   const cancelReply = () => toOpenAI({ type: "response.cancel" });
 
   function timeout(ms, value) {
@@ -162,6 +171,59 @@ export function bridgeCall(twilioWs, deps) {
     }
   }
 
+  // ---------- take over (the person who requested the call talks instead of the AI) ----------
+
+  /**
+   * Hand the phone line to a browser socket. The AI scammer is cut off and its session closed; from here on the
+   * phone's audio goes to the browser and the browser's mic goes to the phone, both as base64 μ-law frames
+   * ({ event: "media", payload }). Nothing is transcribed any more, so the ref stops scoring. The drill ends when
+   * either side hangs up ({ event: "end" } from the browser, or the phone's stop).
+   * @returns {boolean} false if the call isn't live or someone already has the line
+   */
+  function takeOver(ws) {
+    if (phase !== "live" || human) return false;
+    phase = "human";
+    human = ws;
+    refSpeaking = false;
+    replyCut = false;
+    cancelReply();
+    clearPhone();
+    for (const resolve of markWaiters.values()) resolve(false); // a ref line in progress stops waiting
+    for (const resolve of doneWaiters.values()) resolve(false);
+    try {
+      oa?.close(); // its "close" handler only reacts while phase === "live"
+    } catch {
+      /* ignore */
+    }
+    oa = null;
+    ws.on("message", (raw) => {
+      let msg;
+      try {
+        msg = JSON.parse(raw.toString());
+      } catch {
+        return;
+      }
+      if (msg.event === "media" && phase === "human" && typeof msg.payload === "string") {
+        toTwilio({ event: "media", streamSid, media: { payload: msg.payload } });
+      } else if (msg.event === "end") {
+        humanEnded();
+      }
+    });
+    ws.on("close", () => {
+      if (phase === "human") humanEnded(); // they left the page: don't leave the phone hanging
+    });
+    ws.on("error", () => log("HUMAN_SOCKET_ERROR"));
+    toHuman({ event: "ready" });
+    return true;
+  }
+
+  /** The requester pressed End while on the line → score what the AI part of the drill got, hang up the phone. */
+  async function humanEnded() {
+    if (phase !== "human") return;
+    if (callId) endCall(callId).catch(() => {});
+    await hangUp();
+  }
+
   // ---------- OpenAI events ----------
 
   function onOpenAI(raw) {
@@ -236,6 +298,7 @@ export function bridgeCall(twilioWs, deps) {
     const scenario = getScenario(call.scenarioId);
     phase = "live";
     t0 = now();
+    deps.onStarted?.(callId);
     oa = openRealtime({ model: cfg.model, apiKey: cfg.apiKey });
     oa.on("open", () => {
       toOpenAI({
@@ -273,11 +336,11 @@ export function bridgeCall(twilioWs, deps) {
     close();
   }
 
-  /** The person hung up (or the line dropped) while the drill was live → the core reveals "passed". */
+  /** The person hung up (or the line dropped) while the drill was on → the core reveals "passed". */
   function callerHungUp() {
-    const wasLive = phase === "live";
+    const wasOn = onLine();
     phase = "closed";
-    if (wasLive && callId) endCall(callId).catch(() => {});
+    if (wasOn && callId) endCall(callId).catch(() => {});
     close();
   }
 
@@ -298,6 +361,11 @@ export function bridgeCall(twilioWs, deps) {
     } catch {
       /* ignore */
     }
+    try {
+      human?.close();
+    } catch {
+      /* ignore */
+    }
     deps.onClosed?.(callId);
   }
 
@@ -315,23 +383,33 @@ export function bridgeCall(twilioWs, deps) {
       case "media":
         if (phase === "live" && !refSpeaking && msg.media?.payload) {
           toOpenAI({ type: "input_audio_buffer.append", audio: msg.media.payload });
+        } else if (phase === "human" && msg.media?.payload) {
+          toHuman({ event: "media", payload: msg.media.payload });
         }
         return;
       case "mark":
         markWaiters.get(msg.mark?.name)?.(true);
         return;
       case "stop":
-        if (phase === "live") callerHungUp();
+        if (onLine()) callerHungUp();
         else close();
         return;
       default:
     }
   });
   twilioWs.on("close", () => {
-    if (phase === "live") callerHungUp();
+    if (onLine()) callerHungUp();
     else if (phase !== "closed") close();
   });
   twilioWs.on("error", () => log("TWILIO_SOCKET_ERROR"));
 
-  return { get phase() { return phase; } };
+  return {
+    get phase() {
+      return phase;
+    },
+    get callId() {
+      return callId;
+    },
+    takeOver,
+  };
 }

@@ -2,6 +2,20 @@
 
 <!-- If you need a foundation change, put a CHANGE REQUEST block here first (SPEC.md §4). -->
 
+## CHANGE REQUEST (SPEC.md): the live board is gone, "Take over call" is in
+Done on Nov 13, 2026 at the team's request (P1), across frontend **and** backend files (Agent B's `src/voice/`, `src/phone/`, `public/js/voice-client.js`; see the note in `handoff/backend.md`). The spec still describes the old shape; please update:
+- **Remove §5.11** (`GET /api/live`, `GET /api/live/stream`, `DRILL_NOT_FOUND`), the `src/live/` row in the tree, `/live.html` from the pages list, and the "opt-in sharing" bullets (§0, §5.10).
+- **§5.5:** `POST /api/voice/session` takes `{ scenarioId }` and returns `{ callId, clientSecret, model, voice, openingLine }` (no `watchId`). `POST /api/phone/start` takes `{ numberId, scenarioId }` and returns `{ callId }`.
+- **§5.7:** `start(scenarioId) → Promise<{ callId }>`.
+- **New (Part 2):** `WS /phone/takeover?callId=` ("Take over call"). The server answers `{ event: "ready" }`, then relays `{ event: "media", payload }` (base64 μ-law, 8 kHz, 20 ms frames) both ways; the browser sends `{ event: "end" }` to hang up. Close code `4404 NO_LIVE_CALL` if the call isn't live or someone already has the line. The AI session is closed on take-over, nothing more is transcribed (the ref stops scoring), and the drill ends (`endCall` → the reveal on `/api/stream`) when either side hangs up.
+- `src/shared/contract.js` line 43 still mentions the live board in a comment.
+
+## Nov 13, 2026: no live board, "Take over call" on the phone page
+- **Removed:** `live.html`, `js/live.js`, the "Show on the live board" switches (drill and phone), the "On the live board" badge, the Live tab in every nav (`--count:3`), `api.liveBoard`, and the `shareLive`/`watchId` plumbing in `drill.js`, `voice-client.mock.js` and (Agent B's) `voice-client.js`.
+- **Removed earlier the same day:** the grandchild scenario from everything under `public/` (`api.scenarios()` filters `grandkid` out: only unknown-caller scenarios are offered), and the glow on the phone icon.
+- **Take over call** (`phone.html`, `js/phone.js`, `js/phone-audio.js`, `js/audio/mulaw-capture.worklet.js`): once the phone is answered (the first transcript line arrives), a card on the stage explains that the person who placed the call can switch it to themselves, with a **Take over call** button. Pressing it asks for the mic, opens `/phone/takeover?callId=`, and on `ready` flips the card to "You're on the call" (status pill `human`, a live-mic indicator, an **End call** button). The mic is averaged down to 8 kHz and μ-law encoded in an AudioWorklet; the phone's frames play through 8 kHz AudioBuffers (the context resamples). The transcript stops at "YOU TOOK OVER THE CALL" and the unmask line isn't shown after a take-over (nobody said it). Errors: `MIC_DENIED`, `NO_LIVE_CALL` (close code 4404), `TAKEOVER_UNSUPPORTED` (no AudioWorklet).
+- **Not run here:** no Node on this machine, so `npm test` and the real phone run are still owed. Syntax was checked with JavaScriptCore. Things to try live: echo on the phone side (the mic uses echo cancellation; headphones help), the ~40 ms jitter buffer, and the hang-up order (End → the phone drops → the report card appears).
+
 ## Status
 Built on top of P1's "Ref Desk" design (`design-concepts/6-ref-desk.html`): the same look, now wired to the real system. **P1: pull `main` before continuing.** The scripted page is now the real drill page.
 
@@ -48,10 +62,9 @@ Built on top of P1's "Ref Desk" design (`design-concepts/6-ref-desk.html`): the 
 - `js/ui/`: `orb.js` (P1's orb, now also reacting to the music), `feed.js` (the conversation, the Ref's view, the strike meter), `toast.js`.
 - `report.html` + `js/report.js` + `js/report-view.js`: the report card (sessionStorage or `?fixture=`), Replay, and a print stylesheet.
 - `phone.html` + `js/phone.js`: the phone drill dashboard, with the "not set up" state on 503.
-- `live.html` + `js/live.js`: **the live board**. It lists shared drills (polled every 3 s) and streams the selected one over SSE, with "Follow new drills" on.
 
 ## How to use it
-`npm run dev` → `/` (drill), `/?mock=1&judge=1` (demo with no mic and no key), `/live.html`, `/phone.html`, `/report.html?fixture=failed-strikes`.
+`npm run dev` → `/` (drill), `/?mock=1&judge=1` (demo with no mic and no key), `/phone.html`, `/report.html?fixture=failed-strikes`.
 
 ## Acceptance checklist results
 Headless Chrome run (fake mic, OpenAI blocked): 22/22 checks.
@@ -60,8 +73,9 @@ Headless Chrome run (fake mic, OpenAI blocked): 22/22 checks.
 - [x] Decline → the celebration panel, with no session request
 - [x] `report.html?fixture=…` renders, Replay highlights the events, and the empty state works
 - [x] `/phone.html` shows "not set up" on `PHONE_DISABLED`
-- [x] The live board: a shared drill appears once it starts, an unshared one never does, lines, strikes, the red card, and the unmask stream live, and the `callId` never reaches the page
-- [x] No console errors on any page. axe (WCAG 2.1 AA plus best practice): **0 violations** on index (picker and report), report, phone, and live
+- [x] ~~The live board~~ (removed Nov 13, 2026)
+- [ ] "Take over call" on a real phone drill: mic → phone, phone → browser, End hangs up and the report card appears (needs Twilio, ngrok and a phone)
+- [x] No console errors on any page. axe (WCAG 2.1 AA plus best practice): **0 violations** on index (picker and report), report, and phone (checked before the take-over card was added)
 - [x] No horizontal scroll at 375 px
 - [ ] Not checked by machine: how the sounds and music actually sound, the speechSynthesis voices, and the real-mic run (needs a human with headphones)
 

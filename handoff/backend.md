@@ -11,7 +11,8 @@ Affects: all roles (any role adding the first file in a new folder).
 ## Status
 - **Part 1 (browser voice):** code complete and tested (unit tests, plus an end-to-end run in headless Chrome). It still needs the live test with a real key, a mic, and headphones (see the checklist).
 - **Part 2 (phone):** code complete and unit-tested with Twilio and OpenAI faked. It still needs a live test with Twilio keys and ngrok.
-- **Live board (`src/live/`):** done and tested (SPEC §5.11).
+- **Live board (`src/live/`):** ~~done and tested (SPEC §5.11)~~ **removed on Nov 13, 2026** by P1 (Agent F) at the team's request, together with `shareLive`/`watchId` in `src/voice/routes.js`, `src/phone/routes.js`, `public/js/voice-client.js` and their tests. Details and the SPEC change request are in `handoff/frontend.md`.
+- **"Take over call" (Nov 13, 2026, by Agent F in your files, please review):** `src/phone/bridge.js` got a `human` phase and `takeOver(ws)` (cuts the AI off, closes the OpenAI socket, relays Twilio media ⇄ the browser socket as `{ event: "media", payload }`, `{ event: "end" }` or the socket closing hangs up and `endCall`s). `src/phone/routes.js` keeps a `callId → bridge` map (`onStarted`/`onClosed` deps) and upgrades `/phone/takeover?callId=` (close `4404 NO_LIVE_CALL` when there's no live line). Two bridge tests were added in `phone.test.js`. Not run: no Node on P1's machine.
 
 ## Plan (written before coding)
 

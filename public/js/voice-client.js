@@ -3,7 +3,7 @@
 //
 // createVoiceClient(handlers, deps?)
 //   handlers: { onStatus, onTurn, onActions, onError, onDebug? }   (onDebug is optional, used by /dev/voice)
-//   start(scenarioId, { shareLive? }) → { callId, watchId }   (shareLive puts the drill on the live board)
+//   start(scenarioId) → { callId }
 //   deps:     test seam only; production code passes nothing.
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
@@ -302,7 +302,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
 
   // ---------- public API ----------
 
-  async function start(scenarioId, options = {}) {
+  async function start(scenarioId) {
     if (phase !== "idle") {
       const err = voiceError("SESSION_FAILED");
       call("onError", err);
@@ -323,7 +323,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       if (!env.RTCPeerConnection) throw Object.assign(new Error("no webrtc"), { code: "SESSION_FAILED" });
 
       // Session and mic in parallel: saves a round trip before the scammer can speak.
-      const sessionP = api("/api/voice/session", { scenarioId, shareLive: options.shareLive === true }).catch((e) => {
+      const sessionP = api("/api/voice/session", { scenarioId }).catch((e) => {
         throw Object.assign(e, { code: e.code === "UPSTREAM_ERROR" ? "UPSTREAM_ERROR" : "SESSION_FAILED" });
       });
       const micP = env.getUserMedia(MIC_CONSTRAINTS).then(
@@ -407,7 +407,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
             JSON.stringify(session.openingLine ?? ""),
         },
       });
-      return { callId, watchId: session.watchId ?? null };
+      return { callId };
     } catch (e) {
       if (phase === "ended") {
         // Already reported by fail(), or the user pressed End while connecting (not an error).

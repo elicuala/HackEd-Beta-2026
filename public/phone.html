@@ -14,17 +14,16 @@
   <aside class="sheet" aria-label="Phone drill">
     <header class="sheet-head">
       <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></h1>
-      <nav class="seg" aria-label="Main" style="--active:2;--count:4">
+      <nav class="seg" aria-label="Main" style="--active:1;--count:3">
         <span class="seg-thumb" aria-hidden="true"></span>
         <a href="/">Drill</a>
-        <a href="/live.html"><span class="dot-live" aria-hidden="true"></span>Live</a>
         <a href="/phone.html" aria-current="page">Phone</a>
         <a href="/login.html" data-account>Account</a>
       </nav>
     </header>
 
     <div class="section-head"><h2 class="section-title" id="formH">Call a real phone</h2></div>
-    <p class="section-hint">The practice scammer calls a number that agreed to drills. The ref's whistle and voice play on the phone.</p>
+    <p class="section-hint">The practice scammer calls a number that agreed to drills. The ref's whistle and voice play on the phone. Once they've answered, you can take over the call and talk to them yourself.</p>
 
     <div id="disabled" class="notice info" hidden>
       <p><b>Phone drills aren't set up on this server.</b></p>
@@ -37,7 +36,6 @@
         <div class="field"><label for="number">Phone to call</label><select id="number" required></select></div>
         <div class="field"><label for="scenario">Scenario</label><select id="scenario" required></select></div>
         <label class="toggle" for="consent"><span><b>They agreed to this<span class="req">Required</span></b><small>The person who answers knows it's a practice call.</small></span><input class="sw" type="checkbox" id="consent"></label>
-        <label class="toggle" for="share"><span><b>Show on the live board</b><small>Others can follow along. Numbers are always hidden.</small></span><input class="sw" type="checkbox" id="share" checked></label>
       </div>
       <button class="go" id="call" type="submit" disabled>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>
@@ -67,9 +65,31 @@
             <span class="caller">Phone drill</span>
             <div class="clock" id="clock">0:00</div>
             <div class="strikes" id="strikes" aria-live="assertive"><i></i><i></i><i></i><span>0 of 3 strikes</span></div>
-            <p class="hint" style="margin:0">The ref's audio plays on the phone, not here.</p>
+            <p class="hint" id="stageHint" style="margin:0">The ref's audio plays on the phone, not here.</p>
           </div>
         </section>
+
+        <section class="card takeover" id="takeoverBox" data-state="offer" hidden aria-label="Take over the call">
+          <div class="takeover-offer" id="takeoverOffer">
+            <h2>Take over the call</h2>
+            <p>You can switch the call to yourself at any time. The AI caller stops, your microphone goes to the phone, and their voice plays here in your browser. The ref stops scoring from that moment; the report card covers the part the AI handled.</p>
+            <button class="go" id="takeover" type="button">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 003-3V6a3 3 0 10-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V20H8v2h8v-2h-3v-2.08A7 7 0 0019 11z"/></svg>
+              Take over call
+            </button>
+            <p class="hint" style="margin:0">Headphones help. Your browser will ask for your microphone.</p>
+          </div>
+          <div class="takeover-on" id="takeoverOn" hidden>
+            <h2>You're on the call</h2>
+            <p>The AI caller is gone. They hear you through your microphone, and you hear them here. Nothing from here on is written down. Press End call when you're done: the phone hangs up and the report card appears.</p>
+            <span class="mic" role="status"><i aria-hidden="true"></i>Microphone live</span>
+            <button class="go danger" id="hangup" type="button">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>
+              End call
+            </button>
+          </div>
+        </section>
+
         <section class="card" aria-labelledby="convH">
           <div class="watch-head"><h2 id="convH">Live transcript</h2><span class="section-meta" id="convMeta">Waiting</span></div>
           <div class="chat" id="log" tabindex="0" role="log" aria-live="polite" aria-labelledby="convH"><p class="empty">The call's words appear here as they're spoken.</p></div>

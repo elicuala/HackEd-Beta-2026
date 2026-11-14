@@ -10,8 +10,7 @@ A fire drill for phone scams. An AI scammer calls a person who opted in, and a r
 | Page | What it is |
 |---|---|
 | `/` | The drill: incoming call → live call with a ref → the unmask → the report card. `?mock=1` plays a demo call (no mic, no key). `?judge=1` opens the Ref's view |
-| `/live.html` | **Live board**: anyone on the site can watch shared drills as they happen (numbers always hidden) |
-| `/phone.html` | Phone drills through Twilio (needs the Twilio env vars) |
+| `/phone.html` | Phone drills through Twilio (needs the Twilio env vars). "Take over call" lets the person who placed it replace the AI and talk themselves |
 | `/report.html` | The last report card, printable (`?fixture=passed` for a sample) |
 | `/login.html` | Optional account: sign up or log in (email, password, phone). Needs Node 22.5+ |
 

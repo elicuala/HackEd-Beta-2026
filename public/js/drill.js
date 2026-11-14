@@ -141,7 +141,6 @@ function resetCall() {
   $("stage").classList.remove("unmasked");
   $("refText").textContent = "Listening.";
   $("whoLbl").textContent = "Unknown caller";
-  $("liveBadge").hidden = true;
   $("end").hidden = false;
   $("end").disabled = false;
   $("stopHint").hidden = false;
@@ -268,11 +267,7 @@ $("answer").onclick = async () => {
     onError: (err) => my === run && showError(err),
   });
   try {
-    const r = await client.start(scen, { shareLive: $("share").checked && !useMock });
-    if (r?.watchId && my === run) {
-      $("liveBadge").href = `/live.html#${r.watchId}`;
-      $("liveBadge").hidden = false;
-    }
+    await client.start(scen);
   } catch {
     /* onError already showed a friendly message */
   }

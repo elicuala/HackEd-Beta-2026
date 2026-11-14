@@ -1,4 +1,4 @@
-// Owned by Agent F. Fetch wrappers for SPEC §5.5 (+ the live board, §5.11). Errors come back as { code, message }.
+// Owned by Agent F. Fetch wrappers for SPEC §5.5. Errors come back as { code, message }.
 
 /** Scenario ids the UI never offers (see `scenarios` below). */
 const HIDDEN_SCENARIOS = new Set(["grandkid"]);
@@ -28,8 +28,7 @@ export const api = {
   // everywhere (drill picker, phone dashboard). The server still serves it; this is a frontend choice.
   scenarios: async () => (await request("/api/scenarios")).filter((s) => !HIDDEN_SCENARIOS.has(s.id)),
   phoneNumbers: () => request("/api/phone/numbers"),
-  phoneStart: (numberId, scenarioId, shareLive) => post("/api/phone/start", { numberId, scenarioId, shareLive }),
-  liveBoard: () => request("/api/live"),
+  phoneStart: (numberId, scenarioId) => post("/api/phone/start", { numberId, scenarioId }),
 };
 
 /** Friendly words for any error code. Never shows raw errors or stack traces. */
@@ -47,6 +46,10 @@ export function friendly(err) {
       return "Phone drills aren't set up on this server.";
     case "NUMBER_NOT_ALLOWED":
       return "That number hasn't agreed to phone drills.";
+    case "NO_LIVE_CALL":
+      return "That call isn't live any more, so it can't be taken over.";
+    case "TAKEOVER_UNSUPPORTED":
+      return "This browser can't put you on the phone line. Try a current Chrome, Edge, Safari or Firefox.";
     default:
       return "Something went wrong starting the drill. Please try again.";
   }

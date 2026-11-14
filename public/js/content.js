@@ -83,6 +83,7 @@ export const STATUS = {
   scammer_speaking: "Caller speaking",
   ref_speaking: "Ref speaking",
   unmasking: "Dropping the act",
+  human: "You're on the call",
   ended: "Call ended",
 };
 export const NUM = { 1: "one", 2: "two", 3: "three" };

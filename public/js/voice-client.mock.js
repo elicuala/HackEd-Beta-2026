@@ -112,7 +112,7 @@ export function createVoiceClient(handlers = {}) {
       }
       phase = "live";
       run();
-      return { callId: "mock-call", watchId: null };
+      return { callId: "mock-call" };
     },
     pauseScammer() {
       // Cut the scammer off (the browser has one speech queue, and the ref needs it next).

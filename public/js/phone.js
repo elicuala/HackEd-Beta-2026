@@ -1,16 +1,23 @@
 // Owned by Agent F. phone.html: place a Twilio drill and watch it over GET /api/stream?callId= (SPEC §5.6).
+// "Take over call": the person at this page replaces the AI caller. Their mic goes to the phone and the phone's
+// voice plays here, over the /phone/takeover WebSocket (base64 μ-law frames both ways). The ref stops scoring.
 import { api, friendly } from "./api.js";
 import { STATUS, fmt } from "./content.js";
 import { createFeed, createRefsView, setMeter } from "./ui/feed.js";
+import { openLine } from "./phone-audio.js";
 
 const $ = (id) => document.getElementById(id);
 const feed = createFeed($("log"), { them: "Scam caller", me: "Person" });
 const rv = createRefsView($("rv"));
 let source = null;
+let callId = null;
 let strikes = 0;
 let red = false;
 let t0 = 0;
 let timer = null;
+let line = null; // { ws, audio } while this page has the phone line
+let tookOver = false;
+let over = false; // the reveal has arrived
 
 const setPill = (s) => {
   $("pill").dataset.s = s;
@@ -21,6 +28,16 @@ const meter = () => setMeter($("strikes"), strikes, red);
 function showError(err) {
   $("errorText").textContent = friendly(err);
   $("errorBox").hidden = false;
+}
+
+/** "hidden" (no call yet, or it's over), "offer" (the button), "on" (you have the line). */
+function setTakeover(state) {
+  const box = $("takeoverBox");
+  box.hidden = state === "hidden";
+  box.dataset.state = state;
+  $("takeoverOffer").hidden = state !== "offer";
+  $("takeoverOn").hidden = state !== "on";
+  $("takeover").disabled = state !== "offer";
 }
 
 async function init() {
@@ -52,7 +69,7 @@ $("form").onsubmit = async (ev) => {
   $("call").disabled = true;
   let started;
   try {
-    started = await api.phoneStart($("number").value, $("scenario").value, $("share").checked);
+    started = await api.phoneStart($("number").value, $("scenario").value);
   } catch (err) {
     $("call").disabled = !$("consent").checked;
     return showError(err);
@@ -60,8 +77,12 @@ $("form").onsubmit = async (ev) => {
   watch(started.callId);
 };
 
-function watch(callId) {
+function watch(id) {
   source?.close();
+  dropLine();
+  callId = id;
+  tookOver = false;
+  over = false;
   strikes = 0;
   red = false;
   meter();
@@ -70,17 +91,23 @@ function watch(callId) {
   $("convMeta").textContent = $("scenario").selectedOptions[0]?.textContent ?? "";
   $("form").hidden = true;
   $("done").hidden = true;
+  $("stageHint").textContent = "The ref's audio plays on the phone, not here.";
+  setTakeover("hidden");
   setPill("ringing");
 
   source = new EventSource(`/api/stream?callId=${encodeURIComponent(callId)}`);
   source.addEventListener("status", (m) => {
     const { status } = JSON.parse(m.data);
+    if (line || tookOver) return; // the pill says "you're on the call" until the reveal
     setPill(status === "live" ? "live" : "reveal");
   });
   source.addEventListener("turn", (m) => {
     if (!t0) {
+      // The first line means the phone was answered and the AI is on: from here you can take over.
       t0 = performance.now();
       timer = setInterval(() => ($("clock").textContent = fmt((performance.now() - t0) / 1000)), 500);
+      setPill("live");
+      setTakeover("offer");
     }
     feed.turn(JSON.parse(m.data));
   });
@@ -95,23 +122,7 @@ function watch(callId) {
       rv.add(a.event);
       feed.action(a);
     } else if (a.type === "reveal") {
-      if (a.outcome === "failed_autofail") {
-        red = true;
-        strikes = 3;
-        meter();
-        rv.add(a.events?.findLast?.((e) => e.tier === "autofail"));
-        feed.action(a);
-      }
-      if (a.ref?.say) feed.unmask(a.ref.say);
-      feed.sys("CALL ENDED");
-      try {
-        sessionStorage.setItem("scamDrill.result", JSON.stringify(a));
-      } catch {
-        /* private mode */
-      }
-      clearInterval(timer);
-      source.close();
-      $("done").hidden = false;
+      finish(a);
     }
   });
   source.onerror = () => {
@@ -119,12 +130,128 @@ function watch(callId) {
   };
 }
 
+function finish(a) {
+  over = true;
+  if (a.outcome === "failed_autofail") {
+    red = true;
+    strikes = 3;
+    meter();
+    rv.add(a.events?.findLast?.((e) => e.tier === "autofail"));
+    feed.action(a);
+  }
+  // After a take-over nobody spoke the unmask line, so don't show it as if they had.
+  if (a.ref?.say && !tookOver) feed.unmask(a.ref.say);
+  feed.sys("CALL ENDED");
+  try {
+    sessionStorage.setItem("scamDrill.result", JSON.stringify(a));
+  } catch {
+    /* private mode */
+  }
+  clearInterval(timer);
+  source.close();
+  dropLine();
+  setTakeover("hidden");
+  setPill("reveal");
+  $("done").hidden = false;
+}
+
+// ---------- take over the call ----------
+
+$("takeover").onclick = async () => {
+  if (!callId || line || over) return;
+  $("takeover").disabled = true;
+  $("errorBox").hidden = true;
+  if (!("AudioWorklet" in window) || !("WebSocket" in window) || !navigator.mediaDevices?.getUserMedia) {
+    $("takeover").disabled = false;
+    return showError({ code: "TAKEOVER_UNSUPPORTED" });
+  }
+  let audio;
+  try {
+    audio = await openLine({
+      onFrame: (payload) => {
+        if (line?.ws.readyState === 1) line.ws.send(JSON.stringify({ event: "media", payload }));
+      },
+    });
+  } catch (err) {
+    $("takeover").disabled = false;
+    return showError(err);
+  }
+  if (over) return audio.close(); // the call ended while the mic prompt was up
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/phone/takeover?callId=${encodeURIComponent(callId)}`);
+  line = { ws, audio };
+  ws.onmessage = (m) => {
+    let msg;
+    try {
+      msg = JSON.parse(m.data);
+    } catch {
+      return;
+    }
+    if (line?.ws !== ws) return;
+    if (msg.event === "ready") onLine();
+    else if (msg.event === "media" && typeof msg.payload === "string") audio.play(msg.payload);
+  };
+  ws.onclose = (e) => {
+    if (line?.ws !== ws) return;
+    dropLine();
+    if (e.code === 4404) {
+      setTakeover(over ? "hidden" : "offer");
+      showError({ code: "NO_LIVE_CALL" });
+    }
+    // Any other close means the server ended the drill; the reveal arrives over the stream.
+  };
+};
+
+function onLine() {
+  tookOver = true;
+  setTakeover("on");
+  setPill("human");
+  $("stageHint").textContent = "You're talking to them now. The ref has stepped back.";
+  $("convMeta").textContent = "Transcript stopped";
+  feed.sys("YOU TOOK OVER THE CALL");
+  $("hangup").focus();
+}
+
+$("hangup").onclick = () => {
+  if (!line) return;
+  $("hangup").disabled = true;
+  try {
+    line.ws.send(JSON.stringify({ event: "end" }));
+  } catch {
+    dropLine();
+  }
+  // The server hangs up the phone and ends the drill; the reveal arrives over the stream.
+};
+
+function dropLine() {
+  if (!line) return;
+  const { ws, audio } = line;
+  line = null;
+  ws.onclose = null;
+  ws.onmessage = null;
+  try {
+    ws.close();
+  } catch {
+    /* ignore */
+  }
+  audio.close();
+  $("hangup").disabled = false;
+}
+
+addEventListener("pagehide", () => {
+  // Leaving the page while on the line: the server sees the socket close and hangs up the phone.
+  dropLine();
+});
+
 $("again").onclick = () => {
   $("done").hidden = true;
   $("form").hidden = false;
   $("call").disabled = !$("consent").checked;
   t0 = 0;
+  tookOver = false;
   $("clock").textContent = "0:00";
+  $("stageHint").textContent = "The ref's audio plays on the phone, not here.";
+  setTakeover("hidden");
   setPill("idle");
 };
 

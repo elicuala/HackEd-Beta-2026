@@ -1,13 +1,13 @@
 // Owned by Agent B. Phone drills through Twilio (SPEC §5.5, Part 2).
 //   GET  /api/phone/numbers                        → [{ id, label }]  (503 PHONE_DISABLED if not configured)
-//   POST /api/phone/start { numberId, scenarioId, shareLive? } → { callId, watchId }
+//   POST /api/phone/start { numberId, scenarioId }  → { callId }
 //   POST /twilio/voice?callId=                     → TwiML <Connect><Stream> (signature-checked)
 //   WS   /twilio/stream                            → bridge to OpenAI Realtime (attach)
+//   WS   /phone/takeover?callId=                   → "Take over call": the requester's browser replaces the AI on the line
 import twilio from "twilio";
 import { WebSocketServer } from "ws";
 import { createCall, getCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
-import { shareCall, unshareCall } from "../live/board.js";
 import { sendError, httpError, badRequest, requireScenarioId, upstreamError } from "../voice/validate.js";
 import { phoneConfig, allowedNumbers, streamUrl } from "./config.js";
 import { bridgeCall } from "./bridge.js";
@@ -17,6 +17,8 @@ const PLACED_TTL_MS = 10 * 60 * 1000;
 
 // callId → callSid for calls this server placed and hasn't bridged yet. Only these may open a stream.
 const placed = new Map();
+// callId → bridge while its Twilio stream is up (so "Take over call" can find the line).
+const bridges = new Map();
 
 const phoneDisabled = () => httpError(503, "PHONE_DISABLED", "Phone drills aren't set up on this server");
 
@@ -55,7 +57,6 @@ export default function register(app, deps = {}) {
       getScenario(scenarioId); // 404 before we ring anyone
 
       callId = createCall({ scenarioId, channel: "phone" }).callId;
-      const watchId = req.body.shareLive === true ? shareCall(callId) : null;
       let call;
       try {
         call = await makeClient(cfg).calls.create({
@@ -68,9 +69,8 @@ export default function register(app, deps = {}) {
         throw upstreamError("Couldn't place the phone call", "twilio_create");
       }
       placed.set(callId, { callSid: call?.sid ?? null, at: Date.now() });
-      res.json({ callId, watchId });
+      res.json({ callId });
     } catch (err) {
-      if (callId && !placed.has(callId)) unshareCall(callId);
       sendError(res, err);
     }
   });
@@ -97,21 +97,33 @@ export default function register(app, deps = {}) {
   });
 }
 
-/** Called by server.js with the raw http server. Handles WebSocket upgrades for /twilio/stream only. */
+/** Called by server.js with the raw http server. Handles WebSocket upgrades for /twilio/stream and /phone/takeover. */
 export function attach(server, deps = {}) {
   const wss = new WebSocketServer({ noServer: true });
   const makeClient = deps.client ?? defaultClient;
 
   server.on("upgrade", (req, socket, head) => {
-    let pathname = "";
+    let url;
     try {
-      pathname = new URL(req.url, "http://localhost").pathname;
+      url = new URL(req.url, "http://localhost");
     } catch {
       return;
     }
-    if (pathname !== "/twilio/stream") return; // someone else's upgrade
+
+    if (url.pathname === "/phone/takeover") {
+      // The person who requested the call takes the line. The callId is the key: only their page has it.
+      const callId = String(url.searchParams.get("callId") ?? "");
+      return wss.handleUpgrade(req, socket, head, (ws) => {
+        const call = getCall(callId);
+        const bridge = bridges.get(callId);
+        const ok = call && call.channel === "phone" && call.status === "live" && bridge && bridge.takeOver(ws);
+        if (!ok) ws.close(4404, "NO_LIVE_CALL");
+      });
+    }
+
+    if (url.pathname !== "/twilio/stream") return; // someone else's upgrade
     wss.handleUpgrade(req, socket, head, (ws) => {
-      bridgeCall(ws, {
+      const bridge = bridgeCall(ws, {
         openRealtime: deps.openRealtime,
         expectCall: (callId, callSid) => {
           const p = placed.get(callId);
@@ -121,6 +133,10 @@ export function attach(server, deps = {}) {
         },
         hangup: async (callSid) => {
           await makeClient(phoneConfig()).calls(callSid).update({ status: "completed" });
+        },
+        onStarted: (callId) => bridges.set(callId, bridge),
+        onClosed: (callId) => {
+          if (callId && bridges.get(callId) === bridge) bridges.delete(callId);
         },
       });
     });

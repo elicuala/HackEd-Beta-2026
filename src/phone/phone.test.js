@@ -8,7 +8,6 @@ import { bridgeCall } from "./bridge.js";
 import { linearToMulaw, toneMulaw, toFrames } from "./mulaw.js";
 import { allowedNumbers, phoneConfig, streamUrl } from "./config.js";
 import { createCall, getCall, _resetForTests } from "../core/calls.js";
-import { listBoard, watch, _resetBoardForTests } from "../live/board.js";
 
 const ENV_KEYS = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER", "ALLOWED_NUMBERS", "PUBLIC_URL", "OPENAI_API_KEY"];
 const saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
@@ -27,7 +26,6 @@ after(() => {
 });
 beforeEach(() => {
   _resetForTests();
-  _resetBoardForTests();
 });
 
 // ---------------------------------------------------------------- audio
@@ -122,7 +120,7 @@ describe("phone routes", () => {
     assert.deepEqual(JSON.parse(text)[0], { id: "n1", label: "•••• 1234" });
   });
 
-  test("start: validates, 403 for unknown numbers, places the call, shares on request", async () => {
+  test("start: validates, 403 for unknown numbers, places the call", async () => {
     setPhoneEnv(true);
     assert.equal((await post("/api/phone/start", { numberId: "x", scenarioId: "cra" })).status, 400);
     const forbidden = await post("/api/phone/start", { numberId: "n9", scenarioId: "cra" });
@@ -131,23 +129,21 @@ describe("phone routes", () => {
     assert.equal((await post("/api/phone/start", { numberId: "n1", scenarioId: "nope" })).status, 404);
     assert.equal(created.length, 0);
 
-    const res = await post("/api/phone/start", { numberId: "n1", scenarioId: "cra", shareLive: true });
+    const res = await post("/api/phone/start", { numberId: "n1", scenarioId: "cra" });
     assert.equal(res.status, 200);
-    const { callId, watchId } = await res.json();
-    assert.equal(getCall(callId).channel, "phone");
-    assert.ok(watchId);
+    const body = await res.json();
+    assert.deepEqual(Object.keys(body), ["callId"]);
+    assert.equal(getCall(body.callId).channel, "phone");
     assert.equal(created[0].to, "+15551231234");
     assert.equal(created[0].from, "+15550000000");
-    assert.equal(created[0].url, `https://drill.example.app/twilio/voice?callId=${callId}`);
-    assert.ok(watch(watchId, () => {}), "shared on the board (listed once the call starts)");
+    assert.equal(created[0].url, `https://drill.example.app/twilio/voice?callId=${body.callId}`);
   });
 
-  test("start: Twilio failure → 502 UPSTREAM_ERROR and the call leaves the board", async () => {
+  test("start: Twilio failure → 502 UPSTREAM_ERROR", async () => {
     setPhoneEnv(true);
-    const res = await post("/api/phone/start", { numberId: "n2", scenarioId: "cra", shareLive: true });
+    const res = await post("/api/phone/start", { numberId: "n2", scenarioId: "cra" });
     assert.equal(res.status, 502);
     assert.equal((await res.json()).error.code, "UPSTREAM_ERROR");
-    assert.equal(listBoard().length, 0);
     assert.equal(created.length, 1);
   });
 
@@ -295,5 +291,39 @@ describe("phone bridge", () => {
     assert.equal(getCall(callId).outcome, "passed");
     assert.equal(oa.closed, true);
     assert.deepEqual(hangups, []);
+  });
+
+  test("take over: the AI stops, audio flows phone ↔ browser, End hangs up and the drill is scored", async () => {
+    const { tw, oa, callId, hangups, bridge } = setupBridge();
+    const human = new FakeSocket();
+    assert.equal(bridge.takeOver(human), true);
+    assert.equal(bridge.phase, "human");
+    assert.equal(oa.closed, true, "the AI scammer is gone");
+    assert.deepEqual(human.sent.at(-1), { event: "ready" });
+    assert.equal(bridge.takeOver(new FakeSocket()), false); // one driver at a time
+
+    tw.in({ event: "media", media: { payload: "PPPP" } }); // the phone → the browser
+    assert.deepEqual(human.sent.at(-1), { event: "media", payload: "PPPP" });
+    human.in({ event: "media", payload: "HHHH" }); // the browser mic → the phone
+    assert.deepEqual(tw.sent.at(-1), { event: "media", streamSid: "MZ1", media: { payload: "HHHH" } });
+    oa.in({ type: "conversation.item.input_audio_transcription.completed", transcript: "It's 4512 3344 5566" });
+    await tick(5);
+    assert.equal(getCall(callId).strikes, 0, "nothing is scored once a person has the line");
+
+    human.in({ event: "end" });
+    await tick(10);
+    assert.deepEqual(hangups, ["CA1"]);
+    assert.equal(getCall(callId).outcome, "passed");
+    assert.equal(tw.closed && human.closed, true);
+  });
+
+  test("take over: the phone hangs up → the drill ends and the browser socket closes", async () => {
+    const { tw, callId, bridge } = setupBridge();
+    const human = new FakeSocket();
+    bridge.takeOver(human);
+    tw.in({ event: "stop" });
+    await tick(5);
+    assert.equal(getCall(callId).outcome, "passed");
+    assert.equal(human.closed, true);
   });
 });
