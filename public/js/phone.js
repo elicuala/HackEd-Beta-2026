@@ -10,6 +10,11 @@ const $ = (id) => document.getElementById(id);
 const feed = createFeed($("log"), { them: "Scam caller", me: "Person" });
 const rv = createRefsView($("rv"));
 let source = null;
+let fallbackTimer = null; // gives the live stream a moment to deliver, then switches to fetching updates
+let polling = false;
+let pollTimer = null;
+let pollAfter = 0;
+let pollFailures = 0;
 let callId = null;
 let strikes = 0;
 let red = false;
@@ -78,7 +83,7 @@ $("form").onsubmit = async (ev) => {
 };
 
 function watch(id) {
-  source?.close();
+  stopWatching();
   dropLine();
   callId = id;
   tookOver = false;
@@ -95,39 +100,110 @@ function watch(id) {
   setTakeover("hidden");
   setPill("ringing");
 
-  source = new EventSource(`/api/stream?callId=${encodeURIComponent(callId)}`);
-  source.addEventListener("status", (m) => {
-    const { status } = JSON.parse(m.data);
-    if (line || tookOver) return; // the pill says "you're on the call" until the reveal
-    setPill(status === "live" ? "live" : "reveal");
-  });
-  source.addEventListener("turn", (m) => {
-    if (!t0) {
-      // The first line means the phone was answered and the AI is on: from here you can take over.
-      t0 = performance.now();
-      timer = setInterval(() => ($("clock").textContent = fmt((performance.now() - t0) / 1000)), 500);
-      setPill("live");
-      setTakeover("offer");
-    }
-    feed.turn(JSON.parse(m.data));
-  });
-  source.addEventListener("action", (m) => {
-    const a = JSON.parse(m.data);
-    if (a.type === "strike_called") {
-      strikes = a.strikeNumber;
-      meter();
-      rv.add(a.event);
-      feed.action({ ...a, say: a.ref?.say });
-    } else if (a.type === "warning_shown" || a.type === "credit_shown") {
-      rv.add(a.event);
-      feed.action(a);
-    } else if (a.type === "reveal") {
-      finish(a);
-    }
-  });
+  startStream(id);
+}
+
+// ---------- following the call ----------
+// The live stream (Server-Sent Events) is used when the network passes it through. Some tunnels, like Cloudflare's
+// free quick tunnels, hold SSE back, so nothing would ever arrive. If nothing has arrived a few seconds after
+// connecting, we stop waiting and fetch the same events once a second instead (/api/stream/poll).
+
+const STREAM_WAIT_MS = 3500;
+const POLL_EVERY_MS = 1000;
+const POLL_GIVE_UP_AFTER = 8; // failed fetches in a row
+
+function onStatus({ status }) {
+  if (line || tookOver) return; // the pill says "you're on the call" until the reveal
+  setPill(status === "live" ? "live" : "reveal");
+}
+
+function onTurn(turn) {
+  if (!t0) {
+    // The first line means the phone was answered and the AI is on: from here you can take over.
+    t0 = performance.now();
+    timer = setInterval(() => ($("clock").textContent = fmt((performance.now() - t0) / 1000)), 500);
+    setPill("live");
+    setTakeover("offer");
+  }
+  feed.turn(turn);
+}
+
+function onAction(a) {
+  if (a.type === "strike_called") {
+    strikes = a.strikeNumber;
+    meter();
+    rv.add(a.event);
+    feed.action({ ...a, say: a.ref?.say });
+  } else if (a.type === "warning_shown" || a.type === "credit_shown") {
+    rv.add(a.event);
+    feed.action(a);
+  } else if (a.type === "reveal") {
+    finish(a);
+  }
+}
+
+const HANDLERS = { status: onStatus, turn: onTurn, action: onAction };
+
+function stopWatching() {
+  source?.close();
+  source = null;
+  clearTimeout(fallbackTimer);
+  clearTimeout(pollTimer);
+  polling = false;
+}
+
+function startStream(id) {
+  let heard = false;
+  source = new EventSource(`/api/stream?callId=${encodeURIComponent(id)}`);
+  for (const [kind, handle] of Object.entries(HANDLERS)) {
+    source.addEventListener(kind, (m) => {
+      heard = true;
+      handle(JSON.parse(m.data));
+    });
+  }
+  // The stream sends a "status" event the moment it connects, so silence means it is being held back.
+  fallbackTimer = setTimeout(() => {
+    if (!heard && callId === id) startPolling(id);
+  }, STREAM_WAIT_MS);
   source.onerror = () => {
-    if (source.readyState === EventSource.CLOSED && $("done").hidden) showError({ code: "CONNECTION_LOST" });
+    if (callId !== id || polling) return;
+    if (!heard) return startPolling(id); // it never worked on this network
+    if (source?.readyState === EventSource.CLOSED && $("done").hidden) showError({ code: "CONNECTION_LOST" });
   };
+}
+
+function startPolling(id) {
+  if (polling || callId !== id) return;
+  source?.close();
+  source = null;
+  clearTimeout(fallbackTimer);
+  polling = true;
+  pollAfter = 0;
+  pollFailures = 0;
+  poll(id, true);
+}
+
+async function poll(id, first = false) {
+  if (!polling || callId !== id) return;
+  try {
+    const res = await fetch(`/api/stream/poll?callId=${encodeURIComponent(id)}&after=${pollAfter}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("poll " + res.status);
+    const data = await res.json();
+    if (!polling || callId !== id) return;
+    pollFailures = 0;
+    if (first) onStatus({ status: data.status });
+    for (const e of data.events ?? []) {
+      pollAfter = Math.max(pollAfter, e.n);
+      HANDLERS[e.kind]?.(e.data);
+      if (!polling) return; // the reveal stopped it
+    }
+  } catch {
+    if (++pollFailures >= POLL_GIVE_UP_AFTER && $("done").hidden) {
+      stopWatching();
+      return showError({ code: "CONNECTION_LOST" });
+    }
+  }
+  if (polling && callId === id) pollTimer = setTimeout(() => poll(id), POLL_EVERY_MS);
 }
 
 function finish(a) {
@@ -148,7 +224,7 @@ function finish(a) {
     /* private mode */
   }
   clearInterval(timer);
-  source.close();
+  stopWatching();
   dropLine();
   setTakeover("hidden");
   setPill("reveal");
