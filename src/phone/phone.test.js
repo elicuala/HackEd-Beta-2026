@@ -397,6 +397,25 @@ describe("phone bridge", () => {
     assert.equal(getCall(callId).outcome, "failed_autofail");
   });
 
+  test("the third pushback ends a phone drill: passed, the unmask is requested, then Twilio hangs up", async () => {
+    const { oa, hangups, callId } = setupBridge();
+    const victim = (transcript) => oa.in({ type: "conversation.item.input_audio_transcription.completed", transcript });
+    victim("Why are you calling me?");
+    victim("No, I don't think so.");
+    await tick(10);
+    assert.equal(getCall(callId).status, "live");
+    victim("This is a scam, I'm hanging up.");
+    await tick(20);
+    assert.equal(getCall(callId).outcome, "passed");
+    const unmask = oa.sent.find((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask");
+    assert.ok(unmask, "unmask requested");
+    oa.in({ type: "response.created", response: { id: "u1", metadata: unmask.response.metadata } });
+    oa.in({ type: "response.output_audio.delta", response_id: "u1", delta: "UUUU" });
+    oa.in({ type: "response.done", response: { id: "u1", status: "completed" } });
+    await tick(30);
+    assert.deepEqual(hangups, ["CA1"]);
+  });
+
   test("the person hangs up mid-drill → passed, both sockets closed", async () => {
     const { tw, oa, callId, hangups } = setupBridge();
     tw.in({ event: "stop" });

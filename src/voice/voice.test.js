@@ -109,11 +109,30 @@ describe("voice routes", () => {
       assert.equal(res.status, 400, JSON.stringify(body).slice(0, 80));
     }
     let res = await post(app.base, "/api/voice/turn", { callId, turn: { speaker: "victim", text: "hello", t: 1 } });
-    assert.deepEqual(await res.json(), { actions: [] });
+    assert.deepEqual(await res.json(), { actions: [], pushbacks: 0, pushbackLimit: 3 });
     res = await post(app.base, "/api/voice/turn", { callId, turn: { speaker: "victim", text: "Stop.", t: 2 } });
     const { actions } = await res.json();
     assert.equal(actions[0].type, "reveal");
     assert.equal(actions[0].outcome, "passed");
+  });
+
+  test("turn: the third pushback ends the drill as passed, with the reveal in that response", async () => {
+    const { callId } = createCall({ scenarioId: "cra", channel: "browser" });
+    const say = async (speaker, text, t) =>
+      (await post(app.base, "/api/voice/turn", { callId, turn: { speaker, text, t } })).json();
+    await say("scammer", "There is an unpaid balance on your tax account.", 1);
+    assert.equal((await say("victim", "Okay, what is it about?", 2)).pushbacks, 0); // going along: not a pushback
+    assert.equal((await say("victim", "Why do you need that?", 3)).pushbacks, 1);
+    await say("scammer", "Late fees are adding up every day.", 4);
+    assert.equal((await say("victim", "No, I don't think so.", 5)).pushbacks, 2);
+    assert.equal(getCall(callId).status, "live");
+    await say("scammer", "You need to pay today.", 6);
+    const third = await say("victim", "This sounds like a scam. I'll call them myself.", 7);
+    assert.equal(third.pushbacks, 3);
+    const reveal = third.actions.find((a) => a.type === "reveal");
+    assert.ok(reveal, "the mask comes off on the third pushback");
+    assert.equal(reveal.outcome, "passed");
+    assert.notEqual(getCall(callId).status, "live");
   });
 
   test("turn and end: unknown or phone calls → 404 CALL_NOT_FOUND", async () => {
@@ -322,6 +341,22 @@ describe("voice client", () => {
     assert.ok(!f.log.turns.some((t) => /store/.test(t.text)), "the slip never reaches the transcript");
   });
 
+  test("pushbacks: the server's count after each turn reaches the page through onPushbacks", async () => {
+    const f = fakeEnv();
+    const seen = [];
+    const fetch = async (url, init) => {
+      const res = await f.deps.fetch(url, init);
+      if (url !== "/api/voice/turn") return res;
+      const body = await res.json();
+      return { ok: true, status: 200, json: async () => ({ ...body, pushbacks: 2, pushbackLimit: 3 }) };
+    };
+    const client = createVoiceClient({ ...f.handlers, onPushbacks: (p) => seen.push(p) }, { ...f.deps, fetch });
+    await client.start("cra");
+    f.emit({ type: "conversation.item.input_audio_transcription.completed", transcript: "No, I don't think so." });
+    await tick(10);
+    assert.deepEqual(seen, [{ count: 2, limit: 3 }]);
+  });
+
   test("turns: posted in order, redacted for the UI, victim dropped while the ref speaks", async () => {
     const f = fakeEnv();
     const client = createVoiceClient(f.handlers, f.deps);
@@ -367,24 +402,36 @@ describe("voice client", () => {
 
   test("reveal → mic stops at once, unmask speaks in the scammer voice, then ended", async () => {
     const f = fakeEnv({ turnActions: (t) => (/4512/.test(t.text) ? [reveal()] : []) });
-    const client = createVoiceClient(f.handlers, f.deps);
+    let speaker = null;
+    class Speaker { constructor() { this.muted = false; this.srcObject = null; speaker = this; } pause() {} }
+    const client = createVoiceClient(f.handlers, { ...f.deps, Audio: Speaker });
     await client.start("cra");
+    f.emit({ type: "response.created", response: { id: "r9", metadata: { kind: "reply" } } }); // the scheme, mid-reply
     f.emit({ type: "conversation.item.input_audio_transcription.completed", transcript: "it's 4512" });
     await tick(10);
     assert.equal(f.log.actions[0].type, "reveal");
     assert.equal(f.track.stopped, true);
     assert.notEqual(f.log.status.at(-1), "ended"); // still open for the unmask
+    assert.equal(speaker.muted, true, "the line goes silent the moment the act drops");
+    const before = f.dc.sent.length;
+    f.emit({ type: "output_audio_buffer.started", response_id: "r9" }); // scheme audio after the drop…
+    assert.deepEqual(f.dc.sent.slice(before).map((e) => e.type), ["output_audio_buffer.clear"]); // …is thrown away
 
     const p = client.unmask("This was a Loki drill.");
     assert.equal(client.unmask("again"), p); // idempotent
     const req = f.dc.sent.filter((e) => e.type === "response.create").at(-1);
     assert.equal(req.response.metadata.kind, "unmask");
+    // Out of band: only the closing script, none of the scam conversation to carry on with.
+    assert.equal(req.response.conversation, "none");
+    assert.equal(req.response.input.length, 1);
+    assert.equal(speaker.muted, true, "still silent until the unmask itself plays");
     // A narrator reading a script word for word, not "step out of character" (that made it a generic assistant).
     assert.match(req.response.instructions, /word for word/);
     assert.ok(req.response.instructions.endsWith("CLOSING SCRIPT:\nThis was a Loki drill."));
     assert.ok(!/out of character/.test(req.response.instructions));
     f.emit({ type: "response.created", response: { id: "u1", metadata: { kind: "unmask" } } });
     f.emit({ type: "output_audio_buffer.started", response_id: "u1" });
+    assert.equal(speaker.muted, false, "the caller is heard dropping the act");
     f.emit({ type: "response.output_audio_transcript.done", response_id: "u1", transcript: "This was a Loki drill." });
     f.emit({ type: "output_audio_buffer.stopped", response_id: "u1" });
     assert.equal(await p, true);

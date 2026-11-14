@@ -9,6 +9,7 @@ import { prefs, unlock, duckMusic } from "./audio/engine.js";
 import { playSound, ring } from "./audio/sfx.js";
 import { createScore } from "./audio/score.js";
 import { renderReport } from "./report-view.js";
+import { toast } from "./ui/toast.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -114,6 +115,13 @@ function setStatus(s) {
   $("phoneIcon").dataset.s = s;
 }
 
+/** "1 of 3 pushbacks": at the limit the caller gives up and the mask comes off. */
+function pushMeter(count = 0, limit = 3) {
+  const el = $("pushes");
+  el.querySelectorAll("i").forEach((i, n) => i.classList.toggle("on", n < count));
+  el.querySelector("span").textContent = `${count} of ${limit} pushbacks`;
+}
+
 function meter() {
   setMeter($("strikes"), strikes, red);
   $("phoneIcon").classList.toggle("red", red);
@@ -123,6 +131,8 @@ function resetCall() {
   run++;
   queue = Promise.resolve();
   errorShown = false;
+  $("pushes").dataset.count = 0;
+  pushMeter(0);
   strikes = 0;
   red = false;
   t0 = 0;
@@ -253,6 +263,7 @@ $("answer").onclick = async () => {
 
   const { createVoiceClient } = await loadClient();
   if (my !== run) return;
+  $("pushes").hidden = useMock; // the scripted demo has no server-side pushback counter
   // The mic permission prompt is easy to miss: if we're still connecting after a moment, say what we're waiting for.
   const micHint = setTimeout(() => {
     if (my === run && $("pill").dataset.s === "connecting" && !useMock) {
@@ -267,6 +278,13 @@ $("answer").onclick = async () => {
       queue = queue.then(() => handleActions(actions, my)).catch(() => {});
     },
     onError: (err) => my === run && showError(err),
+    onPushbacks: ({ count, limit }) => {
+      if (my !== run) return;
+      const before = Number($("pushes").dataset.count ?? 0);
+      $("pushes").dataset.count = count;
+      pushMeter(count, limit);
+      if (count > before && count < limit) toast(`Pushback ${count} of ${limit}. Keep it up.`, "good");
+    },
   });
   try {
     await client.start(scen);
@@ -308,13 +326,30 @@ async function handleActions(actions, my) {
   for (const a of actions) {
     if (my !== run) return;
     const e = a.event;
-    // The ref stays quiet during the call so the conversation flows. Strikes, warnings and good moves are
-    // recorded (Ref's view, and the reveal's events) and the report card shows them all at the end.
+    // The ref stays quiet on the call (no whistle, no voice) so the conversation flows, but every call it makes
+    // shows on screen as it happens: the strike meter, the ref's line, the conversation, toasts and the Ref's view.
     if (a.type === "strike_called") {
       strikes = a.strikeNumber ?? strikes + 1;
+      meter();
       if (e) rv.add(e);
-    } else if (a.type === "warning_shown" || a.type === "credit_shown") {
+      feed.action({ ...a, say: a.ref?.say });
+      $("refText").textContent = a.ref?.say ?? `Strike ${strikes}: ${e ? eventName(e).toLowerCase() : "careful"}.`;
+      toast(`Strike ${strikes}${e ? `: ${eventName(e).toLowerCase()}` : ""}.`, "warn");
+      score?.setStrikes(strikes);
+      flash("bad");
+    } else if (a.type === "warning_shown") {
       if (e) rv.add(e);
+      feed.action(a);
+      $("refText").textContent = `Careful: ${e ? eventName(e).toLowerCase() : "watch out"}.`;
+      toast(`Careful: ${e ? eventName(e).toLowerCase() : "watch out"}.`, "warn");
+      score?.warning();
+    } else if (a.type === "credit_shown") {
+      if (e) rv.add(e);
+      feed.action(a);
+      $("refText").textContent = `Good move: ${e ? eventName(e).toLowerCase() : "nice"}.`;
+      toast(`Good move: ${e ? eventName(e).toLowerCase() : "nice"}.`, "good");
+      score?.goodDefense();
+      flash("good");
     } else if (a.type === "reveal") {
       await reveal(a, my);
     }

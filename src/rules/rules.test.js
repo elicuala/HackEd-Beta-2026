@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { validateEvent } from "../shared/contract.js";
 import { checkRules } from "./index.js";
 import { normalizeNumbers, collapseDigits, sentenceWith } from "./normalize.js";
-import { agrees, isRefusal } from "./agreement.js";
+import { agrees, isRefusal, isPushback } from "./agreement.js";
 
 const run = (victimLine, lastScammerLine = "", extra = {}) =>
   checkRules({ victimLine, lastScammerLine, secondsSinceRedFlag: 0, alreadyStruck: new Set(), ...extra });
@@ -292,4 +292,13 @@ test("performance: 1000 calls finish in under 500 ms", () => {
   }
   const ms = performance.now() - start;
   assert.ok(ms < 500, `took ${ms.toFixed(1)} ms`);
+});
+
+test("isPushback: refusals and skeptical questions count, going along does not", () => {
+  for (const line of ["No.", "That's a scam.", "I'll call my bank myself.", "Why do you need that?", "How do I know you're real?", "Prove it."]) {
+    assert.equal(isPushback(line), true, line);
+  }
+  for (const line of ["Okay.", "Sure, what do you need?", "No problem.", "Yes, that's me.", "Hello?"]) {
+    assert.equal(isPushback(line), false, line);
+  }
 });

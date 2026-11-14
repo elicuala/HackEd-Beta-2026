@@ -2,7 +2,8 @@
 // Never touches the DOM, never alerts or navigates. Audio plays through an off-page `new Audio()`.
 //
 // createVoiceClient(handlers, deps?)
-//   handlers: { onStatus, onTurn, onActions, onError, onDebug? }   (onDebug is optional, used by /dev/voice)
+//   handlers: { onStatus, onTurn, onActions, onError, onPushbacks?, onDebug? }   (onDebug is used by /dev/voice)
+//             onPushbacks({ count, limit }): the server's pushback counter, after each turn
 //   start(scenarioId) → { callId }
 //   deps:     test seam only; production code passes nothing.
 
@@ -212,6 +213,8 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     phase = "revealed";
     stopMic(); // no more victim speech, ever
     stopScammerAudio(); // the scammer must not talk over the ref
+    // Silence the line until the unmask's own audio starts, so no tail of the scheme can be heard.
+    if (audio) audio.muted = true;
     revealTimer = setTimeout(finish, env.revealCloseMs);
   }
 
@@ -234,6 +237,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const data = await api("/api/voice/turn", { callId, turn });
+        if (typeof data?.pushbacks === "number") call("onPushbacks", { count: data.pushbacks, limit: data.pushbackLimit ?? 3 });
         if (phase === "live") deliver(data?.actions);
         return;
       } catch (err) {
@@ -372,6 +376,12 @@ export function createVoiceClient(handlers = {}, deps = {}) {
         debug("scammer_audio_started", { kind: responseKinds.get(ev.response_id) ?? "reply" });
         if (unmaskWaiter && ev.response_id && ev.response_id === unmaskWaiter.responseId) {
           unmaskWaiter.started = true;
+          if (audio) audio.muted = false; // now the person hears the caller drop the act
+          return;
+        }
+        if (phase !== "live") {
+          // Anything else that starts playing after the act dropped is the scheme: throw it away.
+          send({ type: "output_audio_buffer.clear" });
           return;
         }
         if (phase === "live" && !refSpeaking && !scammerPaused) setStatus("scammer_speaking");
@@ -609,11 +619,20 @@ export function createVoiceClient(handlers = {}, deps = {}) {
         maxTimer: setTimeout(() => settleUnmask(unmaskWaiter?.started ?? false), env.unmaskMaxMs),
       };
       stopScammerAudio();
-      if (audio) audio.muted = false;
-      scammerPaused = false;
+      scammerPaused = false; // the speaker stays muted until the unmask's own audio starts (output_audio_buffer.started)
       unmaskWaiter.retries = 0;
+      // Out of band: a fresh context with only the closing script, none of the scam conversation. Inside the
+      // conversation the model sometimes carried on with the scheme instead of reading the line.
       unmaskWaiter.request = () =>
-        send({ type: "response.create", response: { metadata: { kind: "unmask" }, instructions: unmaskInstructions(line) } });
+        send({
+          type: "response.create",
+          response: {
+            conversation: "none",
+            input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "Read the closing script now." }] }],
+            metadata: { kind: "unmask" },
+            instructions: unmaskInstructions(line),
+          },
+        });
       if (!unmaskWaiter.request()) settleUnmask(false);
     }).then((ok) => {
       finish();

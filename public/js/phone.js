@@ -91,6 +91,7 @@ function watch(id) {
   strikes = 0;
   red = false;
   meter();
+  onPushbacks({ count: 0 });
   feed.clear("Ringing… the words appear here once they answer.");
   rv.clear("Each call the ref makes appears here.");
   $("convMeta").textContent = $("scenario").selectedOptions[0]?.textContent ?? "";
@@ -142,7 +143,13 @@ function onAction(a) {
   }
 }
 
-const HANDLERS = { status: onStatus, turn: onTurn, action: onAction };
+/** The server's pushback counter: at the limit the caller gives up and the mask comes off. */
+function onPushbacks({ count = 0, limit = 3 } = {}) {
+  $("pushes").querySelectorAll("i").forEach((i, n) => i.classList.toggle("on", n < count));
+  $("pushes").querySelector("span").textContent = `${count} of ${limit} pushbacks`;
+}
+
+const HANDLERS = { status: onStatus, turn: onTurn, action: onAction, pushbacks: onPushbacks };
 
 function stopWatching() {
   source?.close();

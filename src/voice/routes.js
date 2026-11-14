@@ -4,6 +4,7 @@ import { createCall, processTurn, endCall, getCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
 import { mintClientSecret } from "./secret.js";
 import { scammerInstructions } from "./config.js";
+import { afterTurn, PUSHBACK_LIMIT } from "./pushback.js";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -62,7 +63,8 @@ export default function register(app, deps = {}) {
       const callId = requireCallId(req.body);
       const turn = requireTurn(req.body);
       requireBrowserCall(callId);
-      res.json({ actions: await processTurn(callId, turn) });
+      const { actions, pushbacks } = await afterTurn(callId, turn, await processTurn(callId, turn));
+      res.json({ actions, pushbacks, pushbackLimit: PUSHBACK_LIMIT });
     } catch (err) {
       sendError(res, err);
     }

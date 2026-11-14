@@ -9,6 +9,7 @@ import { getCall, processTurn, endCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
 import { voiceConfig, realtimeSession, scammerInstructions } from "../voice/config.js";
 import { toneMulaw } from "./mulaw.js";
+import { afterTurn } from "../voice/pushback.js";
 import { unmaskInstructions, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "../../public/js/unmask-prompt.js";
 
 const REALTIME_WS_URL = "wss://api.openai.com/v1/realtime";
@@ -135,7 +136,8 @@ export function bridgeCall(twilioWs, deps) {
       if (phase !== "live") return;
       let actions = [];
       try {
-        actions = await processTurn(callId, { speaker, text: clean, t });
+        const turn = { speaker, text: clean, t };
+        ({ actions } = await afterTurn(callId, turn, await processTurn(callId, turn))); // 3rd pushback → reveal
       } catch {
         log("TURN_FAILED");
         return;

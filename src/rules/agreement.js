@@ -15,6 +15,15 @@ const SKEPTICAL =
 export const AGREE =
   /\b(?:yes|yeah|yep|yup|ok|okay|sure|alright|all right|i will|i'll|i can|of course|right away|go ahead|will do|got it|uh huh|mhm|mm-hmm|certainly|absolutely|if you say so|i guess so|let me (?:get|grab|go|find|write)|i'm on my way|i'm going)\b/;
 
+/**
+ * True if the person pushed back on the caller in any way: a refusal ("no", "that's a scam", "I'll call them
+ * myself") or a skeptical question ("why do you need that?", "how do I know you're real?").
+ */
+export function isPushback(line) {
+  const text = lower(line).replace(BENIGN, " ");
+  return REFUSAL.test(text) || SKEPTICAL.test(text);
+}
+
 /** True if the line pushes back: "no", "that's a scam", "I'll call them myself". */
 export function isRefusal(line) {
   return REFUSAL.test(lower(line).replace(BENIGN, " "));
