@@ -10,10 +10,12 @@ import { createVoiceClient } from "../../public/js/voice-client.js";
 
 // ---------------------------------------------------------------- routes
 
+// These tests cover the OpenAI path, so ElevenLabs is switched off here whatever this machine has set up.
+// The ElevenLabs path is tested in elevenlabs/elevenlabs.test.js.
 function startApp(deps) {
   const app = express();
   app.use(express.json());
-  register(app, deps);
+  register(app, { ...deps, eleven: { agentFor: () => null, ...deps?.eleven } });
   return new Promise((resolve) => {
     const server = app.listen(0, "127.0.0.1", () => {
       const base = `http://127.0.0.1:${server.address().port}`;
@@ -59,7 +61,8 @@ describe("voice routes", () => {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("cache-control"), "no-store");
     const body = await res.json();
-    assert.deepEqual(Object.keys(body).sort(), ["callId", "clientSecret", "model", "openingLine", "voice"]);
+    assert.deepEqual(Object.keys(body).sort(), ["callId", "clientSecret", "model", "openingLine", "provider", "voice"]);
+    assert.equal(body.provider, "openai");
     assert.equal(body.clientSecret, "ek_test");
     assert.ok(body.openingLine.length > 0);
     assert.equal(getCall(body.callId).channel, "browser");

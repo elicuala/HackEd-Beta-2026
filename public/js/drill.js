@@ -4,7 +4,6 @@
 import { api, friendly } from "./api.js";
 import { scenarioIcon, STATUS, eventName, fmt } from "./content.js";
 import { createFeed, createRefsView, setMeter } from "./ui/feed.js";
-import { toast } from "./ui/toast.js";
 import { play as playRef } from "./ref-player.js";
 import { prefs, unlock, duckMusic } from "./audio/engine.js";
 import { playSound, ring } from "./audio/sfx.js";
@@ -298,29 +297,13 @@ async function handleActions(actions, my) {
   for (const a of actions) {
     if (my !== run) return;
     const e = a.event;
+    // The ref stays quiet during the call so the conversation flows. Strikes, warnings and good moves are
+    // recorded (Ref's view, and the reveal's events) and the report card shows them all at the end.
     if (a.type === "strike_called") {
       strikes = a.strikeNumber ?? strikes + 1;
-      meter();
-      rv.add(e);
-      feed.action({ ...a, say: a.ref?.say });
-      if (a.ref?.say) $("refText").textContent = a.ref.say;
-      score?.setStrikes(strikes);
-      flash("bad");
-      await playRef(a, client);
-    } else if (a.type === "warning_shown") {
-      rv.add(e);
-      feed.action(a);
-      $("refText").textContent = `Careful: ${eventName(e).toLowerCase()}.`;
-      toast(`Careful: ${eventName(e).toLowerCase()}.`, "warn");
-      score?.warning();
-    } else if (a.type === "credit_shown") {
-      rv.add(e);
-      feed.action(a);
-      $("refText").textContent = `Good move: ${eventName(e).toLowerCase()}.`;
-      toast(`Good move: ${eventName(e).toLowerCase()}.`, "good");
-      score?.goodDefense();
-      flash("good");
-      await playRef(a, client);
+      if (e) rv.add(e);
+    } else if (a.type === "warning_shown" || a.type === "credit_shown") {
+      if (e) rv.add(e);
     } else if (a.type === "reveal") {
       await reveal(a, my);
     }

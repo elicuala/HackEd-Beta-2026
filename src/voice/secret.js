@@ -12,8 +12,8 @@ import { upstreamError } from "./validate.js";
  * @returns {Promise<{ value: string, expiresAt: number|null, model: string, voice: string }>}
  * Throws UPSTREAM_ERROR (502) on a missing key, network failure, timeout, non-2xx, or a malformed body.
  */
-export async function mintClientSecret({ instructions }, { fetchImpl = globalThis.fetch } = {}) {
-  const cfg = voiceConfig();
+export async function mintClientSecret({ instructions, scenarioId }, { fetchImpl = globalThis.fetch } = {}) {
+  const cfg = voiceConfig(scenarioId);
   if (!cfg.apiKey) throw upstreamError("Voice is not configured", "no_api_key");
 
   let res;

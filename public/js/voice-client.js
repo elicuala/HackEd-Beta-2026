@@ -6,6 +6,10 @@
 //   start(scenarioId) → { callId }
 //   deps:     test seam only; production code passes nothing.
 
+import { createElevenLabsCall } from "./voice-client.elevenlabs.js";
+
+const ELEVENLABS_CLIENT_URL = "/vendor/elevenlabs-client.mjs";
+const UNMASK_FETCH_START_MS = 8000; // ElevenLabs unmask: text-to-speech round trip plus the start of playback
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 const DC_OPEN_TIMEOUT_MS = 10000;
 const REVEAL_CLOSE_MS = 15000; // close everything if unmask() is never called
@@ -42,6 +46,8 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     unmaskStartMs: deps.unmaskStartMs ?? UNMASK_START_MS,
     unmaskMaxMs: deps.unmaskMaxMs ?? UNMASK_MAX_MS,
     dcOpenTimeoutMs: deps.dcOpenTimeoutMs ?? DC_OPEN_TIMEOUT_MS,
+    loadElevenLabs: deps.loadElevenLabs ?? (() => import(ELEVENLABS_CLIENT_URL)),
+    elevenUnmaskStartMs: deps.elevenUnmaskStartMs ?? UNMASK_FETCH_START_MS,
   };
 
   // Handlers must never break the client.
@@ -75,6 +81,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   let unmaskWaiter = null; // { responseId, started, resolve }
   const responseKinds = new Map(); // response_id → "opening" | "unmask" | "reply"
   const cleanups = []; // timers to clear when the client finishes
+  let eleven = null; // set when the server picks ElevenLabs for the scammer: every method then goes there
 
   function setStatus(s) {
     if (s === status) return;
@@ -340,6 +347,29 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       callId = session.callId;
       if (phase !== "connecting") throw Object.assign(new Error("ended"), { code: "SESSION_FAILED" });
 
+      if (session.provider === "elevenlabs") {
+        // ElevenLabs opens its own mic. Ours only confirmed permission early, so release it.
+        stopMic();
+        mic = null;
+        phase = "delegated";
+        eleven = createElevenLabsCall({
+          session,
+          call,
+          debug,
+          setStatus,
+          voiceError,
+          fetch: env.fetch,
+          Audio: env.Audio,
+          now: env.now,
+          loadClient: env.loadElevenLabs,
+          revealCloseMs: env.revealCloseMs,
+          unmaskStartMs: env.elevenUnmaskStartMs,
+          unmaskMaxMs: env.unmaskMaxMs,
+        });
+        await eleven.connect();
+        return { callId };
+      }
+
       pc = new env.RTCPeerConnection();
       pc.ontrack = (e) => {
         if (audio) audio.srcObject = e.streams?.[0] ?? null;
@@ -409,6 +439,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       });
       return { callId };
     } catch (e) {
+      if (eleven) throw e; // the ElevenLabs call already reported the error and ended itself
       if (phase === "ended") {
         // Already reported by fail(), or the user pressed End while connecting (not an error).
         if (endedByUser && !reported) return { callId: null };
@@ -423,6 +454,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   }
 
   function pauseScammer() {
+    if (eleven) return eleven.pauseScammer();
     if (scammerPaused) return;
     scammerPaused = true;
     if (audio) audio.muted = true;
@@ -431,6 +463,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   }
 
   function resumeScammer() {
+    if (eleven) return eleven.resumeScammer();
     if (!scammerPaused) return;
     scammerPaused = false;
     if (audio) audio.muted = false;
@@ -442,6 +475,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   }
 
   function setRefSpeaking(on) {
+    if (eleven) return eleven.setRefSpeaking(on);
     refSpeaking = Boolean(on);
     // Mute the mic too, so the ref's voice on the speakers can't trigger the scammer.
     if (phase === "live") setMicEnabled(!refSpeaking);
@@ -449,6 +483,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   }
 
   function unmask(text) {
+    if (eleven) return eleven.unmask(text);
     if (unmaskPromise) return unmaskPromise;
     const line = String(text ?? "").trim();
     if (phase !== "revealed" || !line || !dc || dc.readyState !== "open") {
@@ -486,6 +521,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   }
 
   function end() {
+    if (eleven) return eleven.end();
     if (phase === "connecting") {
       endedByUser = true;
       finish();
