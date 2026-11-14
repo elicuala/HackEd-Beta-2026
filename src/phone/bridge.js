@@ -125,26 +125,9 @@ export function bridgeCall(twilioWs, deps) {
   async function handleAction(a) {
     if (phase !== "live") return;
     const say = a.ref?.say;
-    if (a.type === "strike_called") {
-      refSpeaking = true;
-      cancelReply();
-      clearPhone();
-      playTone(a.ref?.sound);
-      if (say) {
-        await speak(
-          "ref",
-          "You are now the referee of this practice call, not the caller. In a calm, friendly voice, say exactly " +
-            "this and nothing else: " + JSON.stringify(`Referee: ${say}`)
-        );
-      } else {
-        await playbackDone();
-      }
-      refSpeaking = false;
-      if (phase === "live" && replyCut) toOpenAI({ type: "response.create", response: { metadata: { kind: "reply" } } });
-      replyCut = false;
-    } else if (a.type === "credit_shown") {
-      playTone(a.ref?.sound);
-    } else if (a.type === "reveal") {
+    // The ref stays quiet during the call so the conversation flows: strikes, warnings and good moves make no
+    // sound on the phone. They still reach the dashboard (/phone.html) live, through the core's action stream.
+    if (a.type === "reveal") {
       phase = "revealed";
       refSpeaking = true;
       cancelReply();
