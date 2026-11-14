@@ -34,11 +34,11 @@ export function loadAgents(file = AGENTS_FILE) {
 }
 
 /**
- * Scenarios that use ElevenLabs when it's the provider. The bank agent is left out because ElevenLabs' safety
- * check still blocks it (calls connect and then drop), so it stays on OpenAI. Set ELEVENLABS_SCENARIOS in .env
- * to change this: a comma list like "cra,grandkid,bank_fraud", or "all" once ElevenLabs lifts the block.
+ * Scenarios that use ElevenLabs when it's the provider: just the tax office call. The others stay on OpenAI
+ * (the grandchild call is cut, and ElevenLabs' safety check still blocks the bank agent: calls connect and then
+ * drop). Set ELEVENLABS_SCENARIOS in .env to change this: a comma list like "cra,bank_fraud", or "all".
  */
-export const DEFAULT_ELEVEN_SCENARIOS = ["cra", "grandkid"];
+export const DEFAULT_ELEVEN_SCENARIOS = ["cra"];
 
 export function elevenScenarios(raw = process.env.ELEVENLABS_SCENARIOS) {
   const text = String(raw ?? "").trim().toLowerCase();
