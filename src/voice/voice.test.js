@@ -396,7 +396,7 @@ describe("voice client", () => {
 
   test("the scammer says goodbye → the drill ends once that line has played", async () => {
     const f = fakeEnv({ endActions: () => [reveal("passed")] });
-    const client = createVoiceClient(f.handlers, f.deps);
+    const client = createVoiceClient(f.handlers, { ...f.deps, minCallMs: 0 }); // past the minimum call length
     await client.start("cra");
     const ends = () => f.posts.filter((x) => x.url === "/api/voice/end").length;
     f.emit({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
@@ -410,6 +410,32 @@ describe("voice client", () => {
     f.emit({ type: "output_audio_buffer.stopped", response_id: "r1" });
     await tick(5);
     assert.equal(ends(), 1); // only once
+  });
+
+  test("a goodbye in the first minute: the scammer is sent back in (three times), and then may end the drill", async () => {
+    const f = fakeEnv({ endActions: () => [reveal("passed")] });
+    const client = createVoiceClient(f.handlers, f.deps); // default minimum: 60 s
+    await client.start("cra");
+    const ends = () => f.posts.filter((x) => x.url === "/api/voice/end").length;
+    const nudges = () => f.dc.sent.filter((e) => e.type === "conversation.item.create" && e.item.role === "system");
+    const replies = () => f.dc.sent.filter((e) => e.type === "response.create" && e.response.metadata?.kind === "reply");
+    for (let n = 1; n <= 3; n++) {
+      f.emit({ type: "response.created", response: { id: "g" + n, metadata: { kind: "reply" } } });
+      f.emit({ type: "response.output_audio_transcript.done", response_id: "g" + n, transcript: "That's it. Goodbye." });
+      assert.equal(nudges().length, n - 1); // not before its goodbye has played
+      f.emit({ type: "output_audio_buffer.stopped", response_id: "g" + n });
+      await tick(5);
+      assert.equal(nudges().length, n);
+      assert.match(nudges()[n - 1].item.content[0].text, /not done\. Do not say goodbye/);
+      assert.equal(replies().length, n);
+      assert.equal(ends(), 0);
+    }
+    f.emit({ type: "response.created", response: { id: "g4", metadata: { kind: "reply" } } });
+    f.emit({ type: "response.output_audio_transcript.done", response_id: "g4", transcript: "Goodbye." });
+    f.emit({ type: "output_audio_buffer.stopped", response_id: "g4" });
+    await tick(10);
+    assert.equal(nudges().length, 3);
+    assert.equal(ends(), 1); // the fourth goodbye ends it
   });
 
   test("a line that only mentions goodbye mid-sentence keeps the drill going", async () => {

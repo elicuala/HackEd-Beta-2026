@@ -232,7 +232,7 @@ class FakeSocket extends EventEmitter {
 
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 
-function setupBridge({ expect = true } = {}) {
+function setupBridge({ expect = true, minCallMs } = {}) {
   process.env.OPENAI_API_KEY = "sk-test";
   const { callId } = createCall({ scenarioId: "cra", channel: "phone" });
   const tw = new FakeSocket();
@@ -245,6 +245,7 @@ function setupBridge({ expect = true } = {}) {
     sayAndHangup: async (sid, say) => said.push({ sid, say }),
     openRealtime: () => oa,
     timeouts: { response: 50, playback: 50 },
+    ...(minCallMs !== undefined && { minCallMs }),
   });
   tw.in({ event: "start", start: { streamSid: "MZ1", callSid: "CA1", customParameters: { callId } } });
   oa.emit("open");
@@ -324,7 +325,7 @@ describe("phone bridge", () => {
   });
 
   test("the scammer says goodbye → the drill ends as passed, the unmask plays, then the hang-up", async () => {
-    const { tw, oa, hangups, callId } = setupBridge();
+    const { tw, oa, hangups, callId } = setupBridge({ minCallMs: 0 }); // past the minimum call length
     oa.in({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
     oa.in({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Fine. Don't say I didn't warn you. Goodbye." });
     await tick(20);
@@ -339,6 +340,31 @@ describe("phone bridge", () => {
     await tick(30);
     assert.deepEqual(hangups, ["CA1"]);
     assert.equal(tw.closed, true);
+  });
+
+  test("a goodbye in the first minute doesn't end the call: the scammer is sent back in with a new tactic", async () => {
+    const { oa, callId, hangups } = setupBridge(); // default minimum: 60 s
+    const sign = (n) => {
+      oa.in({ type: "response.created", response: { id: "g" + n, metadata: { kind: "reply" } } });
+      oa.in({ type: "response.output_audio_transcript.done", response_id: "g" + n, transcript: "Fine. Goodbye." });
+    };
+    const nudges = () => oa.sent.filter((e) => e.type === "conversation.item.create" && e.item.role === "system");
+    const replies = () => oa.sent.filter((e) => e.type === "response.create" && e.response.metadata?.kind === "reply");
+    for (let n = 1; n <= 3; n++) {
+      sign(n);
+      await tick(20);
+      assert.equal(nudges().length, n, `nudge ${n}`);
+      assert.match(nudges()[n - 1].item.content[0].text, /not done\. Do not say goodbye/);
+      assert.match(nudges()[n - 1].item.content[0].text, /different tactic/);
+      assert.equal(replies().length, n);
+      assert.equal(getCall(callId).status, "live");
+    }
+    sign(4); // after three tries a goodbye is allowed to end it
+    await tick(20);
+    assert.equal(nudges().length, 3);
+    assert.equal(getCall(callId).outcome, "passed");
+    assert.ok(oa.sent.some((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask"));
+    void hangups;
   });
 
   test("a goodbye in the middle of a line does not end the drill", async () => {

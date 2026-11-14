@@ -6,7 +6,7 @@
 
 const TURN_RETRY_MS = 300;
 
-import { saidGoodbye } from "./unmask-prompt.js";
+import { saidGoodbye, keepGoingNudge, MIN_CALL_MS } from "./unmask-prompt.js";
 
 const redact = (text) => String(text ?? "").replace(/\d/g, "•");
 const codeError = (code) => Object.assign(new Error(code), { code });
@@ -180,6 +180,13 @@ export function createElevenLabsCall(ctx) {
           const role = m?.role ?? (m?.source === "ai" ? "agent" : "user");
           addTurn(role === "agent" ? "scammer" : "victim", m?.message);
           if (role === "agent" && phase === "live" && !goodbye && saidGoodbye(m?.message)) {
+            const elapsed = ctx.now() - t0;
+            if (elapsed < (ctx.minCallMs ?? MIN_CALL_MS)) {
+              // Too early to give up. This agent only speaks when the person does, so give it the nudge for its
+              // next reply and keep the drill going.
+              safely(() => conv?.sendContextualUpdate?.(keepGoingNudge(elapsed)));
+              return;
+            }
             goodbye = agentSpeaking ? 2 : 1;
             goodbyeTimer = setTimeout(endAfterGoodbye, ctx.goodbyeEndMs ?? 8000); // never wait forever
           }

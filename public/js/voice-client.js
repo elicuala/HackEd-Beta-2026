@@ -7,7 +7,7 @@
 //   deps:     test seam only; production code passes nothing.
 
 import { createElevenLabsCall } from "./voice-client.elevenlabs.js";
-import { unmaskInstructions, saidGoodbye } from "./unmask-prompt.js";
+import { unmaskInstructions, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "./unmask-prompt.js";
 
 const ELEVENLABS_CLIENT_URL = "/vendor/elevenlabs-client.mjs";
 const UNMASK_FETCH_START_MS = 8000; // ElevenLabs unmask: text-to-speech round trip plus the start of playback
@@ -60,6 +60,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     unmaskMaxMs: deps.unmaskMaxMs ?? UNMASK_MAX_MS,
     unmaskRetryMs: deps.unmaskRetryMs ?? UNMASK_RETRY_MS,
     goodbyeEndMs: deps.goodbyeEndMs ?? GOODBYE_END_MS,
+    minCallMs: deps.minCallMs ?? MIN_CALL_MS,
     dcOpenTimeoutMs: deps.dcOpenTimeoutMs ?? DC_OPEN_TIMEOUT_MS,
     micWaitMs: deps.micWaitMs ?? MIC_WAIT_MS,
     loadElevenLabs: deps.loadElevenLabs ?? (() => import(ELEVENLABS_CLIENT_URL)),
@@ -100,6 +101,8 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   const brokeCharacter = new Set(); // response ids that were cut off for breaking character
   let lastNudgeAt = -Infinity;
   let endAfterAudio = false; // the scammer said goodbye: end the drill when its audio stops
+  let reengage = false; // the scammer said goodbye too early: send it back in when its audio stops
+  let reengages = 0;
   const cleanups = []; // timers to clear when the client finishes
   let eleven = null; // set when the server picks ElevenLabs for the scammer: every method then goes there
 
@@ -268,6 +271,17 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     if (phase === "live") end();
   }
 
+  /** The scammer said goodbye before the minimum call length: tell it so and have it carry on, in character. */
+  function keepGoing() {
+    if (!reengage) return;
+    reengage = false;
+    if (phase !== "live" || scammerPaused || refSpeaking) return;
+    reengages++;
+    debug("reengaged", { n: reengages });
+    send({ type: "conversation.item.create", item: { type: "message", role: "system", content: [{ type: "input_text", text: keepGoingNudge(env.now() - t0) }] } });
+    send({ type: "response.create", response: { metadata: { kind: "reply" } } });
+  }
+
   // ---------- staying in character ----------
 
   /** Cut off a line where the caller dropped into assistant talk, and send it back into the scene. */
@@ -335,9 +349,16 @@ export function createVoiceClient(handlers = {}, deps = {}) {
         addTurn("scammer", ev.transcript);
         // The scammer gave up and said goodbye: end the drill once that line has played (the person passed).
         if (phase === "live" && responseKinds.get(id) !== "opening" && saidGoodbye(ev.transcript)) {
-          endAfterAudio = true;
-          const t = setTimeout(() => endAfterGoodbye(), env.goodbyeEndMs);
-          cleanups.push(() => clearTimeout(t));
+          if (env.now() - t0 < env.minCallMs && reengages < MAX_REENGAGES) {
+            // Too early to give up: when this line has played, send the scammer back in with a new tactic.
+            reengage = true;
+            const t = setTimeout(() => keepGoing(), env.goodbyeEndMs);
+            cleanups.push(() => clearTimeout(t));
+          } else {
+            endAfterAudio = true;
+            const t = setTimeout(() => endAfterGoodbye(), env.goodbyeEndMs);
+            cleanups.push(() => clearTimeout(t));
+          }
         }
         return;
       }
@@ -359,6 +380,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       case "output_audio_buffer.stopped":
       case "output_audio_buffer.cleared": {
         if (endAfterAudio && ev.type === "output_audio_buffer.stopped") endAfterGoodbye();
+        if (reengage && ev.type === "output_audio_buffer.stopped") keepGoing();
         if (unmaskWaiter && ev.response_id && ev.response_id === unmaskWaiter.responseId) {
           // stopped = it finished speaking; cleared = cut off (counts only if it had started).
           settleUnmask(ev.type === "output_audio_buffer.stopped" ? true : unmaskWaiter.started);
@@ -448,6 +470,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
           loadClient: env.loadElevenLabs,
           revealCloseMs: env.revealCloseMs,
           goodbyeEndMs: env.goodbyeEndMs,
+          minCallMs: env.minCallMs,
           unmaskStartMs: env.elevenUnmaskStartMs,
           unmaskMaxMs: env.unmaskMaxMs,
         });

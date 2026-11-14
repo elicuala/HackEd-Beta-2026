@@ -9,7 +9,7 @@ import { getCall, processTurn, endCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
 import { voiceConfig, realtimeSession, scammerInstructions } from "../voice/config.js";
 import { toneMulaw } from "./mulaw.js";
-import { unmaskInstructions, saidGoodbye } from "../../public/js/unmask-prompt.js";
+import { unmaskInstructions, saidGoodbye, keepGoingNudge, MIN_CALL_MS, MAX_REENGAGES } from "../../public/js/unmask-prompt.js";
 
 const REALTIME_WS_URL = "wss://api.openai.com/v1/realtime";
 const RESPONSE_TIMEOUT_MS = 12000;
@@ -44,6 +44,8 @@ export function bridgeCall(twilioWs, deps) {
   const now = deps.now ?? (() => Date.now());
   const responseTimeout = deps.timeouts?.response ?? RESPONSE_TIMEOUT_MS;
   const playbackTimeout = deps.timeouts?.playback ?? PLAYBACK_TIMEOUT_MS;
+  const minCallMs = deps.minCallMs ?? MIN_CALL_MS;
+  let reengages = 0;
 
   let phase = "waiting"; // waiting → live → (human) → revealed → closed
   let human = null; // the requester's browser socket once they took over the call
@@ -165,6 +167,18 @@ export function bridgeCall(twilioWs, deps) {
     }
   }
 
+  /** The scammer signed off before the minimum call length: after its line plays, send it back in with a new tactic. */
+  function scammerKeepsGoing() {
+    enqueue(async () => {
+      if (phase !== "live") return;
+      await playbackDone();
+      if (phase !== "live" || refSpeaking) return;
+      reengages++;
+      toOpenAI({ type: "conversation.item.create", item: { type: "message", role: "system", content: [{ type: "input_text", text: keepGoingNudge(now() - t0) }] } });
+      toOpenAI({ type: "response.create", response: { metadata: { kind: "reply" } } });
+    });
+  }
+
   /**
    * The scammer signed off ("...Goodbye."). Without this the line just went silent until the person hung up.
    * Let the goodbye finish playing, then end the drill: the person passed, and the unmask says so.
@@ -274,7 +288,10 @@ export function bridgeCall(twilioWs, deps) {
         const kind = kinds.get(ev.response_id)?.kind ?? "reply";
         if (kind === "reply" || kind === "opening") {
           addTurn("scammer", ev.transcript);
-          if (kind === "reply" && saidGoodbye(ev.transcript)) scammerGaveUp();
+          if (kind === "reply" && saidGoodbye(ev.transcript)) {
+            if (now() - t0 < minCallMs && reengages < MAX_REENGAGES) scammerKeepsGoing();
+            else scammerGaveUp();
+          }
         }
         return;
       }

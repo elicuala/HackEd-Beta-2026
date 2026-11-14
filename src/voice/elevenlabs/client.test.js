@@ -13,7 +13,7 @@ const until = async (fn, ms = 1000) => {
 };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-function setup({ turnActions = () => [], startError = null, unmaskStatus = 200 } = {}) {
+function setup({ turnActions = () => [], startError = null, unmaskStatus = 200, minCallMs } = {}) {
   const log = { statuses: [], turns: [], actions: [], errors: [], posted: [], conv: null, opts: null, audio: [] };
   const conv = {
     volume: 1,
@@ -24,6 +24,10 @@ function setup({ turnActions = () => [], startError = null, unmaskStatus = 200 }
     },
     setMicMuted(m) {
       this.micMuted = m;
+    },
+    updates: [],
+    sendContextualUpdate(text) {
+      this.updates.push(text);
     },
     async endSession() {
       this.ended = true;
@@ -76,6 +80,7 @@ function setup({ turnActions = () => [], startError = null, unmaskStatus = 200 }
       },
       Audio: FakeAudio,
       loadElevenLabs: async () => fakeSdk,
+      ...(minCallMs !== undefined && { minCallMs }),
       revealCloseMs: 2000,
       unmaskMaxMs: 1000,
       elevenUnmaskStartMs: 500,
@@ -170,7 +175,7 @@ test("elevenlabs: a dropped connection mid-call is CONNECTION_LOST", async () =>
 });
 
 test("elevenlabs: the scammer says goodbye → the drill ends once that line has played", async () => {
-  const { client, log, conv } = setup();
+  const { client, log, conv } = setup({ minCallMs: 0 }); // past the minimum call length
   await client.start("cra");
   const ends = () => log.posted.filter((p) => p.path === "/api/voice/end").length;
   log.opts.onMessage({ role: "agent", message: "Fine. Suit yourself. Goodbye." });
@@ -193,4 +198,17 @@ test("elevenlabs: a goodbye mid-sentence, or a stale 'listening' before it speak
   log.opts.onModeChange({ mode: "listening" }); // arrives before it starts speaking
   await new Promise((r) => setTimeout(r, 30));
   assert.equal(log.posted.filter((p) => p.path === "/api/voice/end").length, 0);
+});
+
+test("elevenlabs: a goodbye in the first minute doesn't end the call; the agent is nudged to keep going", async () => {
+  const { client, log, conv } = setup(); // default minimum: 60 s
+  await client.start("cra");
+  log.opts.onMessage({ role: "agent", message: "Fine. Goodbye." });
+  log.opts.onModeChange({ mode: "speaking" });
+  log.opts.onModeChange({ mode: "listening" });
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(log.posted.filter((p) => p.path === "/api/voice/end").length, 0);
+  assert.equal(conv.updates.length, 1);
+  assert.match(conv.updates[0], /not done\. Do not say goodbye/);
+  assert.equal(conv.ended, false);
 });

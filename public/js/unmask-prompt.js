@@ -26,3 +26,18 @@ const GOODBYE = /\b(?:good ?bye|bye(?:-| )bye|bye now|this call is over|i(?:'|â€
 export function saidGoodbye(text) {
   return GOODBYE.test(String(text ?? "").trim().slice(-80));
 }
+
+// ---------- persistence: the call should last at least a minute ----------
+// The model can't tell how long a call has run, so the clients check the clock. If the scammer signs off too
+// early, the call is not ended: it is told how little time has passed and sent back in with a new tactic.
+export const MIN_CALL_MS = 60000;
+export const MAX_REENGAGES = 3; // never loop: after this many tries a goodbye is allowed to end the drill
+
+export function keepGoingNudge(elapsedMs) {
+  const secs = Math.max(1, Math.round(elapsedMs / 1000));
+  return (
+    `Only about ${secs} seconds of this call have passed, so you are not done. Do not say goodbye. Briefly pick the conversation back up ` +
+    "in character and come back at the person with a different tactic than the ones you have already used: more urgency, a firmer tone, " +
+    "a made-up consequence from your story, an easier option, or an appeal to settling this quickly. One to three short sentences."
+  );
+}
