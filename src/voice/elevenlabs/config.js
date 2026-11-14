@@ -36,7 +36,8 @@ export function loadAgents(file = AGENTS_FILE) {
 export function elevenConfig() {
   return {
     apiKey: (process.env.ELEVENLABS_API_KEY ?? "").trim(),
-    // VOICE_PROVIDER=openai switches back to the OpenAI realtime scammer without removing anything.
-    provider: (process.env.VOICE_PROVIDER ?? "").trim().toLowerCase() || "elevenlabs",
+    // OpenAI Realtime plays the scammer by default. VOICE_PROVIDER=elevenlabs switches to the ElevenLabs agents,
+    // but ElevenLabs' safety review blocked them, so leave this unset unless ElevenLabs approves them.
+    provider: (process.env.VOICE_PROVIDER ?? "").trim().toLowerCase() || "openai",
   };
 }

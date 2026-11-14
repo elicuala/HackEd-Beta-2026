@@ -43,7 +43,7 @@ export default function register(app, deps = {}) {
       const agent = eleven.agentFor(scenario.id);
       const upstream = agent
         ? { provider: "elevenlabs", conversationToken: await eleven.token(agent.agentId), clientSecret: null, model: "elevenlabs", voice: agent.voiceId }
-        : await mint({ instructions: scenario.system_prompt }).then((secret) => ({
+        : await mint({ instructions: scenario.system_prompt, scenarioId: scenario.id }).then((secret) => ({
             provider: "openai",
             clientSecret: secret.value,
             model: secret.model,

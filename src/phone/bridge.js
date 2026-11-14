@@ -228,7 +228,7 @@ export function bridgeCall(twilioWs, deps) {
       log("STREAM_REJECTED");
       return close();
     }
-    const cfg = voiceConfig();
+    const cfg = voiceConfig(call.scenarioId);
     if (!cfg.apiKey) {
       log("UPSTREAM_ERROR");
       return hangUp();
