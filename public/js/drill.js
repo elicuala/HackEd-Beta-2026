@@ -66,6 +66,24 @@ $("demoBadge").hidden = !useMock;
 
 // ---------- setup ----------
 
+// Quiet ref (default): strikes and credits are recorded silently and only shown in the report at the end.
+// ?liveref=1 (or the toggle) brings back the live whistle, ref voice, and toasts, as in the demo script.
+const readLiveRef = () => {
+  try {
+    return localStorage.getItem("scamDrill.liveRef") === "on";
+  } catch {
+    return false;
+  }
+};
+$("liveRef").checked = params.has("liveref") || readLiveRef();
+$("liveRef").onchange = (e) => {
+  try {
+    localStorage.setItem("scamDrill.liveRef", e.target.checked ? "on" : "off");
+  } catch {
+    /* private mode */
+  }
+};
+let liveRef = $("liveRef").checked; // fixed for the length of each call
 $("snd").checked = prefs.sound;
 $("music").checked = prefs.music;
 $("snd").onchange = (e) => (prefs.sound = e.target.checked);
@@ -247,6 +265,7 @@ async function loadClient() {
 
 $("answer").onclick = async () => {
   const my = run;
+  liveRef = $("liveRef").checked;
   stopRing();
   unlock(); // inside the click: lets the browser play sound
   setStep("talk");
@@ -306,6 +325,12 @@ async function handleActions(actions, my) {
   for (const a of actions) {
     if (my !== run) return;
     const e = a.event;
+    if (!liveRef && a.type !== "reveal") {
+      // Quiet ref: don't interrupt the conversation. Keep a count; the report card shows every call at the end.
+      if (a.type === "strike_called") strikes = a.strikeNumber ?? strikes + 1;
+      if (e) rv.add(e);
+      continue;
+    }
     if (a.type === "strike_called") {
       strikes = a.strikeNumber ?? strikes + 1;
       meter();
