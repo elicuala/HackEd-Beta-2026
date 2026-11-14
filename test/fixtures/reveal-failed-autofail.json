@@ -5,7 +5,7 @@
   "scenarioTitle": "Tax agency call",
   "endedAt": "2026-11-14T18:00:00.000Z",
   "ref": {
-    "say": "This was a Scam Drill. You're safe, and nothing you said was saved.",
+    "say": "This was a Loki drill. You're safe, and nothing you said was saved.",
     "sound": "red_card"
   },
   "outcome": "failed_autofail",

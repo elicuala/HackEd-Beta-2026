@@ -277,7 +277,7 @@ function fakeEnv({ sessionStatus = 200, micDenied = false, turnActions = () => [
 }
 
 const reveal = (outcome = "failed_autofail") => ({
-  type: "reveal", callId: "call-1", outcome, events: [], ref: { say: "This was a Scam Drill.", sound: "red_card" },
+  type: "reveal", callId: "call-1", outcome, events: [], ref: { say: "This was a Loki drill.", sound: "red_card" },
 });
 
 describe("voice client", () => {
@@ -345,20 +345,20 @@ describe("voice client", () => {
     assert.equal(f.track.stopped, true);
     assert.notEqual(f.log.status.at(-1), "ended"); // still open for the unmask
 
-    const p = client.unmask("This was a Scam Drill.");
+    const p = client.unmask("This was a Loki drill.");
     assert.equal(client.unmask("again"), p); // idempotent
     const req = f.dc.sent.filter((e) => e.type === "response.create").at(-1);
     assert.equal(req.response.metadata.kind, "unmask");
     assert.match(req.response.instructions, /out of character/);
     f.emit({ type: "response.created", response: { id: "u1", metadata: { kind: "unmask" } } });
     f.emit({ type: "output_audio_buffer.started", response_id: "u1" });
-    f.emit({ type: "response.output_audio_transcript.done", response_id: "u1", transcript: "This was a Scam Drill." });
+    f.emit({ type: "response.output_audio_transcript.done", response_id: "u1", transcript: "This was a Loki drill." });
     f.emit({ type: "output_audio_buffer.stopped", response_id: "u1" });
     assert.equal(await p, true);
     assert.equal(f.log.status.at(-1), "ended");
     assert.equal(f.pcs[0].closed, true);
     const turnTexts = f.posts.filter((x) => x.url === "/api/voice/turn").map((x) => x.body.turn.text);
-    assert.ok(!turnTexts.includes("This was a Scam Drill.")); // the unmask is never a Turn
+    assert.ok(!turnTexts.includes("This was a Loki drill.")); // the unmask is never a Turn
   });
 
   test("unmask resolves false fast when no audio starts, and the call still ends", async () => {
@@ -367,7 +367,7 @@ describe("voice client", () => {
     await client.start("cra");
     await client.end();
     assert.equal(f.log.actions[0].outcome, "passed");
-    assert.equal(await client.unmask("This was a Scam Drill."), false);
+    assert.equal(await client.unmask("This was a Loki drill."), false);
     assert.equal(f.log.status.at(-1), "ended");
   });
 

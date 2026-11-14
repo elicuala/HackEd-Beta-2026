@@ -89,8 +89,8 @@ You also pick the **sound** (SPEC §0.4). It must be one of `"whistle" | "red_ca
 - `credit_shown` → `{ say: null, sound: "chime" }`
 - `reveal` → **the unmask.** This line is spoken **by the scammer's own voice dropping the act** (SPEC §1, §5.7), so write it in the first person, as the same character stepping out of the role. The action includes `outcome`, `events`, and `scenarioId`, so tailor it to them:
   - sound: `failed_autofail` → `"red_card"`, `failed_strikes` → `"chime"`, `passed` → `"fanfare"`
-  - say, `failed_*`: "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved." + **the trick I used on you** (from the scenario and the top event type, for example "I said a warrant was coming today so you'd panic and pay fast.") + "Next time, hang up and call the official number yourself."
-  - say, `passed`: "Okay, I'll drop the act. This was a Scam Drill, and you beat me." + what they did right (from the `good_defense` events, or a general line) + "Hanging up and calling the official number is exactly right."
+  - say, `failed_*`: "Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved." + **the trick I used on you** (from the scenario and the top event type, for example "I said a warrant was coming today so you'd panic and pay fast.") + "Next time, hang up and call the official number yourself."
+  - say, `passed`: "Okay, I'll drop the act. This was a Loki drill, and you beat me." + what they did right (from the `good_defense` events, or a general line) + "Hanging up and calling the official number is exactly right."
 
 Every strike and autofail `type` from the rules engine, and every `tactic` from the judge, needs a phrase, and every scenario needs an unmask "trick" line. Unknown types and scenarios get a generic phrase. Under 30 words per strike `say` and **under 50 words for a reveal `say`**, no digits, kind, never shaming. Tests: coverage of every type and scenario, no digits, a valid sound for each action and outcome, and word limits.
 

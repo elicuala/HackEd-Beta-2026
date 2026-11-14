@@ -164,7 +164,7 @@
           "scenarioTitle": "Bank fraud department",
           "endedAt": "2026-11-13T21:02:18.251Z",
           "ref": {
-            "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right.",
+            "say": "Okay, I'll drop the act. This was a Loki drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right.",
             "sound": "fanfare"
           }
         }
@@ -180,7 +180,7 @@
     "scenarioTitle": "Bank fraud department",
     "endedAt": "2026-11-13T21:02:18.252Z",
     "ref": {
-      "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
+      "say": "Okay, I'll drop the act. This was a Loki drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
       "sound": "fanfare"
     }
   }

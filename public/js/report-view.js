@@ -43,7 +43,7 @@ export function renderReport(host, result, opts = {}) {
     : outcome === "failed_autofail"
       ? ["Red card", "PRACTICE"]
       : [`${strikes} of 3`, "STRIKES"];
-  const colors = passed ? ["var(--green)", "var(--teal)"] : ["var(--red)", "var(--orange)"];
+  const colors = passed ? ["var(--green)", "var(--green)"] : ["var(--red)", "var(--red)"];
 
   host.replaceChildren();
 

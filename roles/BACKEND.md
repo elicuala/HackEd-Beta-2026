@@ -73,7 +73,7 @@ Bridge behavior:
 **Part 1**
 - [ ] `/dev/voice`: talk to the CRA scammer with headphones. Record 5 response latencies (end of your speech → first scammer audio). Target: median ≤ 1.5 s
 - [ ] Every finished line shows up as a Turn, and `/api/voice/turn` returns actions (try "I'm with TD" after L merges rules)
-- [ ] Saying "stop" → a reveal comes through `onActions`, and the mic stops straight away. On `/dev/voice`, calling `unmask("This was a Scam Drill.")` makes **the scammer's voice** say it and resolve `true`, then audio stops and `onStatus("ended")` fires. If `unmask` is never called, everything closes within 15 s
+- [ ] Saying "stop" → a reveal comes through `onActions`, and the mic stops straight away. On `/dev/voice`, calling `unmask("This was a Loki drill.")` makes **the scammer's voice** say it and resolve `true`, then audio stops and `onStatus("ended")` fires. If `unmask` is never called, everything closes within 15 s
 - [ ] `"scammer_speaking"` / `"live"` follow the scammer's audio (or the handoff says why it was skipped)
 - [ ] Speaker test (no headphones): the scammer's own voice doesn't come back as victim Turns. Write the result in the handoff and tell P1, since it decides how loud the music can be
 - [ ] No API key in browser dev tools (Network tab and Sources)

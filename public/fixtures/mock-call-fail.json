@@ -232,7 +232,7 @@
           "scenarioTitle": "Tax agency call",
           "endedAt": "2026-11-13T21:02:18.249Z",
           "ref": {
-            "say": "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself.",
+            "say": "Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself.",
             "sound": "red_card"
           }
         }
@@ -248,7 +248,7 @@
     "scenarioTitle": "Tax agency call",
     "endedAt": "2026-11-13T21:02:18.249Z",
     "ref": {
-      "say": "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
+      "say": "Okay, I'll drop the act. This was a Loki drill, and you beat me. You ended the call before I could finish my trick. Hanging up and calling the official number is exactly right.",
       "sound": "fanfare"
     }
   }

@@ -1,4 +1,4 @@
-// Shared contract for Scam Drill. FOUNDATION: locked. Change only through a change request (SPEC.md §4).
+// Shared contract for Loki. FOUNDATION: locked. Change only through a change request (SPEC.md §4).
 
 export const TIERS = ["autofail", "strike", "warning", "good_defense"];
 export const SOURCES = ["rules", "ai"];

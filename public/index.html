@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Scam Drill</title>
+<title>Loki</title>
 <meta name="description" content="Answer a realistic practice scam call. A ref scores every answer live, then the caller drops the act and shows you the trick.">
 <script src="/js/theme-boot.js"></script>
 <link rel="stylesheet" href="/css/app.css">
@@ -16,7 +16,7 @@
   <!-- ======================= side panel ======================= -->
   <aside class="sheet" aria-label="Drill">
     <header class="sheet-head">
-      <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Scam Drill</a></h1>
+      <h1 class="app-title"><a href="/"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>Loki</a></h1>
       <nav class="seg" aria-label="Main" style="--active:0;--count:3">
         <span class="seg-thumb" aria-hidden="true"></span>
         <a href="/" aria-current="page">Drill</a>
@@ -111,7 +111,7 @@
       <section class="call-card" id="callPanel" hidden aria-label="Call">
         <div class="stage" id="stage">
           <span class="caller" id="callerLbl">Incoming call</span>
-          <canvas class="orb" id="orb" width="560" height="560" aria-hidden="true"></canvas>
+          <div class="phone" id="phoneIcon" data-s="idle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg></div>
           <div class="who" id="whoLbl">Unknown caller</div>
           <div class="hint" id="callScen" style="margin:0"></div>
           <div id="ringBtns" class="callbtns">

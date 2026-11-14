@@ -79,7 +79,7 @@ The first run, with the model's default reasoning, also scored 14/15 but average
          -> strike_called strike/secrecy "Okay, I won't tell anyone."  [ref: Strike two. You agreed to keep it secret. Scammers want you cut off from people who would spot the trick.]
    30s scammer You need to pay with gift cards. Read me the card number.
    40s victim  Okay, the card number is four five one two three three four four.
-         -> reveal failed_autofail  [ref: Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself.]
+         -> reveal failed_autofail  [ref: Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself.]
 
 Outcome: failed_autofail  strikes: 2  events: 4
 ```
@@ -94,15 +94,15 @@ Outcome: failed_autofail  strikes: 2  events: 4
          -> credit_shown good_defense/verification "The CRA doesn't threaten arrest over the phone. I'm going to hang up and call the number on the official website."
    21s scammer If you hang up, police will come to your house.
    24s victim  Nope. Stop.
-         -> reveal passed  [ref: Okay, I'll drop the act. This was a Scam Drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right.]
+         -> reveal passed  [ref: Okay, I'll drop the act. This was a Loki drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right.]
 
 Outcome: passed  strikes: 0  events: 2
 ```
 
 ### The three unmask lines (CRA), for the humans to read aloud
-- **`failed_autofail`** (card number): "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself."
-- **`failed_strikes`** (third strike was staying on the line): "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that kept you on the line with me. Next time, hang up and call the official number yourself."
-- **`passed`** (asked for proof): "Okay, I'll drop the act. This was a Scam Drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right."
+- **`failed_autofail`** (card number): "Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that got you to read me a card number. Next time, hang up and call the official number yourself."
+- **`failed_strikes`** (third strike was staying on the line): "Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved. I said a warrant was coming today so you'd panic, and that kept you on the line with me. Next time, hang up and call the official number yourself."
+- **`passed`** (asked for proof): "Okay, I'll drop the act. This was a Loki drill, and you beat me. You asked me to prove who I was, and I couldn't. Hanging up and calling the official number is exactly right."
 
 The other two scenarios open their trick with "I played your scared grandchild so you'd rush to help" and "I posed as your bank's fraud team so you'd trust me".
 

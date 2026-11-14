@@ -35,9 +35,9 @@ export const GENERIC_STRIKE = { what: "You went along with the caller", why: "Sc
 
 /** The unmask, spoken in the scammer's own voice as it steps out of character. First person. */
 export const REVEAL = {
-  failedOpen: "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved.",
+  failedOpen: "Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved.",
   failedClose: "Next time, hang up and call the official number yourself.",
-  passedOpen: "Okay, I'll drop the act. This was a Scam Drill, and you beat me.",
+  passedOpen: "Okay, I'll drop the act. This was a Loki drill, and you beat me.",
   passedClose: "Hanging up and calling the official number is exactly right.",
 };
 

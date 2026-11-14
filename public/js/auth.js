@@ -9,7 +9,7 @@ async function call(path, body) {
       credentials: "same-origin",
     });
   } catch {
-    throw { code: "NETWORK", message: "We couldn't reach the Scam Drill server. Check your connection and try again." };
+    throw { code: "NETWORK", message: "We couldn't reach the Loki server. Check your connection and try again." };
   }
   let data = null;
   try {

@@ -41,4 +41,4 @@ app.use((err, req, res, _next) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-server.listen(port, () => console.log(`Scam Drill running on http://localhost:${port}`));
+server.listen(port, () => console.log(`Loki running on http://localhost:${port}`));

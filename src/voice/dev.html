@@ -34,7 +34,7 @@
   <button id="resume" disabled>resumeScammer</button>
   <label><input type="checkbox" id="ref" disabled> setRefSpeaking</label>
   <label><input type="checkbox" id="autoUnmask" checked> auto unmask on reveal</label>
-  <button id="unmask" disabled>unmask("This was a Scam Drill…")</button>
+  <button id="unmask" disabled>unmask("This was a Loki drill…")</button>
 </fieldset>
 
 <fieldset>
@@ -67,7 +67,7 @@ const showLatency = () => {
   $("lat").textContent = `samples (ms): ${samples.map(Math.round).join(", ")}   median: ${Math.round(median)} ms`;
 };
 
-const UNMASK_LINE = "Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved.";
+const UNMASK_LINE = "Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved.";
 let client = null;
 
 function setLive(on) {

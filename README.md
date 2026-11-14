@@ -1,4 +1,4 @@
-# Scam Drill
+# Loki
 
 > Scammers practice on your grandparents every day. We let them practice back.
 

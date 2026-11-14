@@ -4,7 +4,6 @@
 import { api, friendly } from "./api.js";
 import { scenarioIcon, STATUS, eventName, fmt } from "./content.js";
 import { createFeed, createRefsView, setMeter } from "./ui/feed.js";
-import { createOrb } from "./ui/orb.js";
 import { toast } from "./ui/toast.js";
 import { play as playRef } from "./ref-player.js";
 import { prefs, unlock, duckMusic } from "./audio/engine.js";
@@ -60,7 +59,6 @@ function flash(kind) {
 
 const feed = createFeed($("log"));
 const rv = createRefsView($("rv"));
-const orb = createOrb($("orb"));
 $("rvBox").open = params.has("judge");
 $("demoBadge").hidden = !useMock;
 
@@ -114,12 +112,12 @@ const scenarioTitle = () => scenarios.find((s) => s.id === scen)?.title ?? "Prac
 function setStatus(s) {
   $("pill").dataset.s = s;
   $("pillText").textContent = STATUS[s] ?? s;
-  if (s !== "idle") orb.set({ mode: s === "ringing" ? "ring" : s });
+  $("phoneIcon").dataset.s = s;
 }
 
 function meter() {
   setMeter($("strikes"), strikes, red);
-  orb.set({ strikes, red });
+  $("phoneIcon").classList.toggle("red", red);
 }
 
 function resetCall() {
@@ -193,7 +191,6 @@ function ringNowNow() {
   $("convMeta").textContent = scenarioTitle();
   setStatus("ringing");
   feed.sys("INCOMING CALL");
-  orb.start();
   unlock();
   stopRing = ring();
   $("answer").focus({ preventScroll: true });
@@ -346,7 +343,7 @@ async function reveal(a, my) {
   score?.stop();
   setStatus("unmasking");
   $("callerLbl").textContent = "The mask comes off";
-  $("whoLbl").textContent = "This was a Scam Drill";
+  $("whoLbl").textContent = "This was a Loki drill";
   $("stage").classList.add("unmasked");
   $("end").hidden = true;
   $("stopHint").hidden = true;

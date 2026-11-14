@@ -79,7 +79,7 @@ test("ref: every failed unmask (scenario x type) is first person, kind, digit-fr
       for (const [outcome, tier] of [["failed_autofail", "autofail"], ["failed_strikes", "strike"]]) {
         const { say } = scriptFor({ type: "reveal", outcome, scenarioId, events: [event(tier, type)] });
         checkSay(say, 50, `${scenarioId}/${type}/${outcome}`);
-        assert.ok(say.startsWith("Okay, I'll drop the act. This was a Scam Drill, and you're safe. Nothing you said was saved. I "), say);
+        assert.ok(say.startsWith("Okay, I'll drop the act. This was a Loki drill, and you're safe. Nothing you said was saved. I "), say);
         assert.ok(say.endsWith("Next time, hang up and call the official number yourself."), say);
       }
     }
@@ -114,7 +114,7 @@ test("ref: every passed unmask is first person, kind, digit-free, under 50 words
     for (const type of types) {
       const { say } = scriptFor({ type: "reveal", outcome: "passed", scenarioId, events: [event("good_defense", type)] });
       checkSay(say, 50, `${scenarioId}/passed/${type}`);
-      assert.ok(say.startsWith("Okay, I'll drop the act. This was a Scam Drill, and you beat me. You "), say);
+      assert.ok(say.startsWith("Okay, I'll drop the act. This was a Loki drill, and you beat me. You "), say);
       assert.ok(say.endsWith("Hanging up and calling the official number is exactly right."), say);
     }
     checkSay(scriptFor({ type: "reveal", outcome: "passed", scenarioId, events: [] }).say, 50, `${scenarioId}/passed/none`);

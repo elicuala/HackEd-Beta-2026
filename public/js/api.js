@@ -8,7 +8,7 @@ async function request(path, init) {
   try {
     res = await fetch(path, init);
   } catch {
-    throw { code: "NETWORK", message: "We couldn't reach the Scam Drill server." };
+    throw { code: "NETWORK", message: "We couldn't reach the Loki server." };
   }
   let data = null;
   try {
@@ -41,7 +41,7 @@ export function friendly(err) {
     case "CONNECTION_LOST":
       return "The practice call dropped. Please try again.";
     case "NETWORK":
-      return "We couldn't reach the Scam Drill server. Check your connection and try again.";
+      return "We couldn't reach the Loki server. Check your connection and try again.";
     case "PHONE_DISABLED":
       return "Phone drills aren't set up on this server.";
     case "NUMBER_NOT_ALLOWED":

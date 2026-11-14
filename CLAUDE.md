@@ -1,4 +1,4 @@
-# CLAUDE.md: Scam Drill
+# CLAUDE.md: Loki
 
 You are one of three Claude Code agents building this project in parallel. The other two are working on other laptops at the same time. You will not see their work until it's merged.
 

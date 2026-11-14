@@ -1,4 +1,4 @@
-# Scam Drill: project specification
+# Loki: project specification
 
 **Version 1.2 · Hackathon build · 3 people, 3 Claude Code agents, working in parallel**
 
@@ -59,7 +59,7 @@ In the browser, all of it is built by Agent F with the Web Audio API: no audio f
 ### 0.5 The 3-minute demo (rehearse this exact script)
 Use a **speaker, not headphones**, so judges hear the scammer, the ref, and the music. Test speaker mode at sync 2 (echo can leak into the mic). If it's bad, the "grandparent" wears a headset mic while the output goes to the speaker.
 1. **Hook (15 s):** the tagline, plus the latest Canadian Anti-Fraud Centre reported-loss figure (look it up and cite it on Devpost, don't guess).
-2. **Live drill (90 s):** a teammate plays a grandparent on the CRA scenario. The incoming-call screen rings and they answer. They name their bank, the whistle blows, strike 1 lights up, and the score tightens. Then they read out a fake card number: red card, the music cuts, and **the same scammer voice drops the act** ("This was a Scam Drill…") and explains the trick it used.
+2. **Live drill (90 s):** a teammate plays a grandparent on the CRA scenario. The incoming-call screen rings and they answer. They name their bank, the whistle blows, strike 1 lights up, and the score tightens. Then they read out a fake card number: red card, the music cuts, and **the same scammer voice drops the act** ("This was a Loki drill…") and explains the trick it used.
 3. **Report card (30 s):** the timeline, "What you did well", the takeaway, and **Replay your drill** playing the call back as music.
 4. **Under the hood (30 s):** open the Ref's view (rules vs AI judge, confidence), show the architecture slide, and if the stretch works, ring a teammate's phone live.
 5. **Close (15 s):** "Nothing is recorded. Five minutes of practice beats a lifetime of savings."
@@ -68,7 +68,7 @@ Use a **speaker, not headphones**, so judges hear the scammer, the ref, and the 
 
 ## 1. Product
 
-Scam Drill is a fire drill for phone scams. A person who opted in gets a call from an AI scammer, in the browser or on a real phone. A ref (a calm sports official) scores the call live in three tiers: warnings, strikes, and a red card. When the drill ends, **the scammer's own voice drops the act** and explains the tactic that almost worked (the unmask). Then the person gets a report card with one habit to keep, and can replay their drill as music.
+Loki is a fire drill for phone scams. A person who opted in gets a call from an AI scammer, in the browser or on a real phone. A ref (a calm sports official) scores the call live in three tiers: warnings, strikes, and a red card. When the drill ends, **the scammer's own voice drops the act** and explains the tactic that almost worked (the unmask). Then the person gets a report card with one habit to keep, and can replay their drill as music.
 
 The drill flow is **incoming call (Answer or Decline) → live call → unmask → report card**. Declining an unknown caller is the safest move there is, so Decline gets celebrated on the drill page ("Not answering unknown numbers is a great habit") with an "Answer this time" button to practise anyway. No call is created, so there's no report card.
 
@@ -358,7 +358,7 @@ A shared drill is **listed** once its first line is spoken, so a call that never
 
 First impressions count, and the Best Looking judges look at the page before they see the demo.
 - **Prizes to select:** Best Looking Project and Best Inclusion of Music. Not Soloist, not Environmental (§0.1).
-- **Title and tagline:** "Scam Drill: scammers practice on your grandparents every day. We let them practice back."
+- **Title and tagline:** "Loki: scammers practice on your grandparents every day. We let them practice back."
 - **Video (≤ 3 min, with sound):** the §0.5 script. Make sure the music and the ref are clearly audible.
 - **Screenshots, in this order:** (1) the incoming-call screen, (2) the live drill with 2 strikes lit and the Ref's view open, (3) the reveal, (4) the report card, (5) the landing page. Take them at 1440 px wide in light mode, plus one dark-mode shot.
 - **Sections:** Inspiration (the CAFC stat), What it does, **How we built it** (an architecture diagram covering WebRTC realtime voice → the core → rules + AI judge → ref → SSE, and the phone bridge; this is where Complexity is scored), Challenges (latency, spoken numbers, keeping an AI scammer safe), Accomplishments, What we learned, What's next.
