@@ -139,6 +139,8 @@ describe("phone routes", () => {
     assert.equal(created[0].to, "+15551231234");
     assert.equal(created[0].from, "+15550000000");
     assert.equal(created[0].url, `https://drill.example.app/twilio/voice?callId=${callId}`);
+    // Trial Twilio accounts reject calls that set extra parameters such as `method`.
+    assert.deepEqual(Object.keys(created[0]).sort(), ["from", "to", "url"]);
     assert.ok(watch(watchId, () => {}), "shared on the board (listed once the call starts)");
   });
 

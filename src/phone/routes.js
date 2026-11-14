@@ -61,8 +61,8 @@ export default function register(app, deps = {}) {
         call = await makeClient(cfg).calls.create({
           to: target.number,
           from: cfg.fromNumber,
+          // POST is Twilio's default. Don't send `method`: trial accounts reject calls that set it.
           url: `${cfg.publicUrl}/twilio/voice?callId=${encodeURIComponent(callId)}`,
-          method: "POST",
         });
       } catch (err) {
         // Twilio's error code (e.g. 21219 unverified number, 21210 bad "from") goes to the log; never the number itself.
