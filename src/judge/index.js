@@ -7,6 +7,7 @@ import { SYSTEM_PROMPT, buildInput, scrub } from "./prompt.js";
 import { mockJudge } from "./mock.js";
 
 export const JUDGE_TIMEOUT_MS = 4000;
+export const MIN_WORDS_TO_JUDGE = 3;
 
 let client = null;
 function getClient() {
@@ -77,6 +78,10 @@ export async function judgeTurn({ recentTurns, scenario } = {}, deps = {}) {
   try {
     const latest = Array.isArray(recentTurns) ? recentTurns.at(-1) : null;
     if (latest?.speaker !== "victim" || typeof latest.text !== "string" || !latest.text.trim()) return [];
+
+    // "Okay.", "Yes.", "Hmm": too little to judge on its own. The rules engine reads these against what the
+    // scammer just asked; judging them too only repeated its calls (and cost a model call per grunt).
+    if (latest.text.trim().split(/\s+/).length < MIN_WORDS_TO_JUDGE) return [];
 
     const t = typeof latest.t === "number" ? latest.t : 0;
     const mock = deps.mock ?? usesMock();

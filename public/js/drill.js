@@ -4,6 +4,7 @@
 import { api, friendly } from "./api.js";
 import { scenarioIcon, STATUS, eventName, fmt } from "./content.js";
 import { createFeed, createRefsView, setMeter } from "./ui/feed.js";
+import { play as playRef } from "./ref-player.js";
 import { prefs, unlock, duckMusic } from "./audio/engine.js";
 import { playSound, ring } from "./audio/sfx.js";
 import { createScore } from "./audio/score.js";
@@ -298,7 +299,9 @@ function onStatus(s) {
     clearInterval(clockTimer);
     score?.stop();
   }
-  if ($("pill").dataset.s !== "unmasking" || s === "ended") setStatus(s);
+  // While the caller is dropping the act, the pill stays on "Dropping the act": reveal() sets "ended" itself
+  // once the line has been said (the voice client may already have hung up underneath).
+  if ($("pill").dataset.s !== "unmasking") setStatus(s);
 }
 
 async function handleActions(actions, my) {
@@ -332,22 +335,29 @@ async function reveal(a, my) {
     flash("good");
   }
   score?.stop();
-  // The drill is over: stop every voice now (the caller and any browser speech) and hang up. No unmask speech;
-  // the caller's "here's the trick" explanation is on the report card instead.
+  // The drill is over. First the caller says so, in its own voice: "This was a Loki drill..." and the trick it
+  // used. Only then does the call end and the report card appear (the same line is on the report too).
   try {
     speechSynthesis.cancel();
   } catch {
     /* no speech synthesis */
   }
-  client?.pauseScammer?.();
-  client?.end?.();
-  duckMusic(false);
-  if (a.ref?.sound) playSound(a.ref.sound); // the short red-card / fanfare sting only
+  setStatus("unmasking");
+  $("callerLbl").textContent = "The mask comes off";
   $("whoLbl").textContent = "This was a Loki drill";
   $("stage").classList.add("unmasked");
   $("end").hidden = true;
   $("stopHint").hidden = true;
-  if (a.ref?.say) feed.unmask(a.ref.say);
+  if (a.ref?.say) {
+    $("captionText").textContent = a.ref.say;
+    $("caption").hidden = false;
+    feed.unmask(a.ref.say);
+  }
+  // Plays the sting, then the unmask in the caller's voice (the browser's voice if that fails). Never throws.
+  await playRef(a, client);
+  if (my !== run) return;
+  client?.end?.(); // hang up, now that the line has been said
+  duckMusic(false);
   try {
     sessionStorage.setItem("scamDrill.result", JSON.stringify(a));
   } catch {

@@ -7,13 +7,17 @@
 //   deps:     test seam only; production code passes nothing.
 
 import { createElevenLabsCall } from "./voice-client.elevenlabs.js";
+import { unmaskInstructions, saidGoodbye } from "./unmask-prompt.js";
 
 const ELEVENLABS_CLIENT_URL = "/vendor/elevenlabs-client.mjs";
 const UNMASK_FETCH_START_MS = 8000; // ElevenLabs unmask: text-to-speech round trip plus the start of playback
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 const DC_OPEN_TIMEOUT_MS = 10000;
 const REVEAL_CLOSE_MS = 15000; // close everything if unmask() is never called
-const UNMASK_START_MS = 4000; // no unmask audio by then → resolve false (caller falls back to speechSynthesis)
+const UNMASK_START_MS = 6000; // no unmask audio by then → resolve false (caller falls back to speechSynthesis)
+const GOODBYE_END_MS = 8000; // the scammer signed off: end the drill by then even if we never hear its audio stop
+const UNMASK_RETRY_MS = 400; // the cut-off reply was still winding down: ask for the unmask again
+const UNMASK_MAX_RETRIES = 2;
 const UNMASK_MAX_MS = 15000;
 const TURN_RETRY_MS = 300;
 // The caller slipping out of character into assistant talk ("I can't store that", "as an AI"). Caught while it's
@@ -54,6 +58,8 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     revealCloseMs: deps.revealCloseMs ?? REVEAL_CLOSE_MS,
     unmaskStartMs: deps.unmaskStartMs ?? UNMASK_START_MS,
     unmaskMaxMs: deps.unmaskMaxMs ?? UNMASK_MAX_MS,
+    unmaskRetryMs: deps.unmaskRetryMs ?? UNMASK_RETRY_MS,
+    goodbyeEndMs: deps.goodbyeEndMs ?? GOODBYE_END_MS,
     dcOpenTimeoutMs: deps.dcOpenTimeoutMs ?? DC_OPEN_TIMEOUT_MS,
     micWaitMs: deps.micWaitMs ?? MIC_WAIT_MS,
     loadElevenLabs: deps.loadElevenLabs ?? (() => import(ELEVENLABS_CLIENT_URL)),
@@ -93,6 +99,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   const spokenSoFar = new Map(); // response_id → the scammer's words so far (to catch a break of character)
   const brokeCharacter = new Set(); // response ids that were cut off for breaking character
   let lastNudgeAt = -Infinity;
+  let endAfterAudio = false; // the scammer said goodbye: end the drill when its audio stops
   const cleanups = []; // timers to clear when the client finishes
   let eleven = null; // set when the server picks ElevenLabs for the scammer: every method then goes there
 
@@ -254,6 +261,13 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     w.resolve(ok);
   }
 
+  /** The scammer's goodbye has finished playing → end the drill (the server reveals "passed"). */
+  function endAfterGoodbye() {
+    if (!endAfterAudio) return;
+    endAfterAudio = false;
+    if (phase === "live") end();
+  }
+
   // ---------- staying in character ----------
 
   /** Cut off a line where the caller dropped into assistant talk, and send it back into the scene. */
@@ -319,6 +333,12 @@ export function createVoiceClient(handlers = {}, deps = {}) {
           return; // never part of the transcript or the scoring
         }
         addTurn("scammer", ev.transcript);
+        // The scammer gave up and said goodbye: end the drill once that line has played (the person passed).
+        if (phase === "live" && responseKinds.get(id) !== "opening" && saidGoodbye(ev.transcript)) {
+          endAfterAudio = true;
+          const t = setTimeout(() => endAfterGoodbye(), env.goodbyeEndMs);
+          cleanups.push(() => clearTimeout(t));
+        }
         return;
       }
       case "conversation.item.input_audio_transcription.completed":
@@ -338,6 +358,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       }
       case "output_audio_buffer.stopped":
       case "output_audio_buffer.cleared": {
+        if (endAfterAudio && ev.type === "output_audio_buffer.stopped") endAfterGoodbye();
         if (unmaskWaiter && ev.response_id && ev.response_id === unmaskWaiter.responseId) {
           // stopped = it finished speaking; cleared = cut off (counts only if it had started).
           settleUnmask(ev.type === "output_audio_buffer.stopped" ? true : unmaskWaiter.started);
@@ -346,10 +367,20 @@ export function createVoiceClient(handlers = {}, deps = {}) {
         idleStatus();
         return;
       }
-      case "error":
+      case "error": {
         // e.g. response.cancel with nothing in progress: expected and harmless. Log the code only.
         debug("realtime_error", { code: ev.error?.code ?? ev.error?.type ?? "unknown" });
+        // The unmask was refused because the reply we cut off was still active: ask again in a moment.
+        const w = unmaskWaiter;
+        if (w && !w.responseId && w.request && w.retries < UNMASK_MAX_RETRIES) {
+          w.retries++;
+          const t = setTimeout(() => {
+            if (unmaskWaiter === w && !w.responseId) w.request();
+          }, env.unmaskRetryMs);
+          cleanups.push(() => clearTimeout(t));
+        }
         return;
+      }
       default:
     }
   }
@@ -556,16 +587,10 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       stopScammerAudio();
       if (audio) audio.muted = false;
       scammerPaused = false;
-      const sent = send({
-        type: "response.create",
-        response: {
-          metadata: { kind: "unmask" },
-          instructions:
-            "The drill is over. Step out of character and say exactly this, kindly, and nothing else: " +
-            JSON.stringify(line),
-        },
-      });
-      if (!sent) settleUnmask(false);
+      unmaskWaiter.retries = 0;
+      unmaskWaiter.request = () =>
+        send({ type: "response.create", response: { metadata: { kind: "unmask" }, instructions: unmaskInstructions(line) } });
+      if (!unmaskWaiter.request()) settleUnmask(false);
     }).then((ok) => {
       finish();
       return ok;

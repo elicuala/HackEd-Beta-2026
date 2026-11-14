@@ -150,6 +150,13 @@ export function attach(server, deps = {}) {
         hangup: async (callSid) => {
           await makeClient(phoneConfig()).calls(callSid).update({ status: "completed" });
         },
+        // Unmask fallback: Twilio's own voice reads the line, then hangs up.
+        sayAndHangup: async (callSid, say) => {
+          const vr = new twilio.twiml.VoiceResponse();
+          vr.say(say);
+          vr.hangup();
+          await makeClient(phoneConfig()).calls(callSid).update({ twiml: vr.toString() });
+        },
         onStarted: (callId) => bridges.set(callId, bridge),
         onClosed: (callId) => {
           if (callId && bridges.get(callId) === bridge) bridges.delete(callId);

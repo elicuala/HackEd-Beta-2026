@@ -238,9 +238,11 @@ function setupBridge({ expect = true } = {}) {
   const tw = new FakeSocket();
   const oa = new FakeSocket();
   const hangups = [];
+  const said = []; // the provider-voice fallback for the unmask
   const bridge = bridgeCall(tw, {
     expectCall: () => expect,
     hangup: async (sid) => hangups.push(sid),
+    sayAndHangup: async (sid, say) => said.push({ sid, say }),
     openRealtime: () => oa,
     timeouts: { response: 50, playback: 50 },
   });
@@ -253,7 +255,7 @@ function setupBridge({ expect = true } = {}) {
     const m = JSON.parse(s);
     if (m.event === "mark") setTimeout(() => tw.in({ event: "mark", mark: m.mark }), 1);
   };
-  return { callId, tw, oa, hangups, bridge };
+  return { callId, tw, oa, hangups, said, bridge };
 }
 
 describe("phone bridge", () => {
@@ -308,6 +310,9 @@ describe("phone bridge", () => {
     const unmask = oa.sent.find((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask");
     assert.ok(unmask, "unmask requested");
     assert.match(unmask.response.instructions, /drop the act/);
+    assert.match(unmask.response.instructions, /word for word/); // a narrator reading a script, never a bare "step out of character"
+    assert.ok(!/out of character/.test(unmask.response.instructions));
+    assert.equal(unmask.response.conversation, "none");
     oa.in({ type: "response.created", response: { id: "u1", metadata: unmask.response.metadata } });
     oa.in({ type: "response.output_audio.delta", response_id: "u1", delta: "UUUU" });
     assert.deepEqual(tw.sent.filter((m) => m.event === "media").at(-1).media.payload, "UUUU");
@@ -316,6 +321,54 @@ describe("phone bridge", () => {
     assert.deepEqual(hangups, ["CA1"]);
     assert.equal(getCall(callId).outcome, "failed_autofail");
     assert.equal(tw.closed && oa.closed, true);
+  });
+
+  test("the scammer says goodbye → the drill ends as passed, the unmask plays, then the hang-up", async () => {
+    const { tw, oa, hangups, callId } = setupBridge();
+    oa.in({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
+    oa.in({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Fine. Don't say I didn't warn you. Goodbye." });
+    await tick(20);
+    assert.equal(getCall(callId).outcome, "passed"); // no more silent line
+    const unmask = oa.sent.find((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask");
+    assert.ok(unmask, "unmask requested");
+    assert.match(unmask.response.instructions, /you beat me/);
+    assert.deepEqual(hangups, []); // not before the line has been said
+    oa.in({ type: "response.created", response: { id: "u1", metadata: unmask.response.metadata } });
+    oa.in({ type: "response.output_audio.delta", response_id: "u1", delta: "UUUU" });
+    oa.in({ type: "response.done", response: { id: "u1", status: "completed" } });
+    await tick(30);
+    assert.deepEqual(hangups, ["CA1"]);
+    assert.equal(tw.closed, true);
+  });
+
+  test("a goodbye in the middle of a line does not end the drill", async () => {
+    const { oa, callId } = setupBridge();
+    oa.in({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
+    oa.in({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Don't say goodbye yet, this is urgent. Which bank do you use?" });
+    await tick(20);
+    assert.equal(getCall(callId).status, "live");
+  });
+
+  test("if the caller's voice can't say the unmask, it's asked again, then the phone provider reads it", async () => {
+    const { oa, hangups, said, callId } = setupBridge();
+    oa.in({ type: "response.created", response: { id: "r1", metadata: null } });
+    oa.in({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Read me the card number." });
+    oa.in({ type: "conversation.item.input_audio_transcription.completed", transcript: "It's 4512 3344 5566 7788" });
+    await tick(10);
+    const asks = () => oa.sent.filter((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask");
+    assert.equal(asks().length, 1);
+    oa.in({ type: "response.created", response: { id: "u1", metadata: asks()[0].response.metadata } });
+    oa.in({ type: "response.done", response: { id: "u1", status: "failed" } }); // no audio
+    await tick(10);
+    assert.equal(asks().length, 2, "asked a second time");
+    oa.in({ type: "response.created", response: { id: "u2", metadata: asks()[1].response.metadata } });
+    oa.in({ type: "response.done", response: { id: "u2", status: "failed" } });
+    await tick(30);
+    assert.equal(said.length, 1);
+    assert.equal(said[0].sid, "CA1");
+    assert.match(said[0].say, /This was a Loki drill/);
+    assert.deepEqual(hangups, []); // the provider hangs up after speaking
+    assert.equal(getCall(callId).outcome, "failed_autofail");
   });
 
   test("the person hangs up mid-drill → passed, both sockets closed", async () => {

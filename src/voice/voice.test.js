@@ -379,7 +379,10 @@ describe("voice client", () => {
     assert.equal(client.unmask("again"), p); // idempotent
     const req = f.dc.sent.filter((e) => e.type === "response.create").at(-1);
     assert.equal(req.response.metadata.kind, "unmask");
-    assert.match(req.response.instructions, /out of character/);
+    // A narrator reading a script word for word, not "step out of character" (that made it a generic assistant).
+    assert.match(req.response.instructions, /word for word/);
+    assert.ok(req.response.instructions.endsWith("CLOSING SCRIPT:\nThis was a Loki drill."));
+    assert.ok(!/out of character/.test(req.response.instructions));
     f.emit({ type: "response.created", response: { id: "u1", metadata: { kind: "unmask" } } });
     f.emit({ type: "output_audio_buffer.started", response_id: "u1" });
     f.emit({ type: "response.output_audio_transcript.done", response_id: "u1", transcript: "This was a Loki drill." });
@@ -389,6 +392,56 @@ describe("voice client", () => {
     assert.equal(f.pcs[0].closed, true);
     const turnTexts = f.posts.filter((x) => x.url === "/api/voice/turn").map((x) => x.body.turn.text);
     assert.ok(!turnTexts.includes("This was a Loki drill.")); // the unmask is never a Turn
+  });
+
+  test("the scammer says goodbye → the drill ends once that line has played", async () => {
+    const f = fakeEnv({ endActions: () => [reveal("passed")] });
+    const client = createVoiceClient(f.handlers, f.deps);
+    await client.start("cra");
+    const ends = () => f.posts.filter((x) => x.url === "/api/voice/end").length;
+    f.emit({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
+    f.emit({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Suit yourself. Goodbye." });
+    await tick(5);
+    assert.equal(ends(), 0); // the goodbye is still playing
+    f.emit({ type: "output_audio_buffer.stopped", response_id: "r1" });
+    await tick(10);
+    assert.equal(ends(), 1);
+    assert.equal(f.log.actions.at(-1).type, "reveal");
+    f.emit({ type: "output_audio_buffer.stopped", response_id: "r1" });
+    await tick(5);
+    assert.equal(ends(), 1); // only once
+  });
+
+  test("a line that only mentions goodbye mid-sentence keeps the drill going", async () => {
+    const f = fakeEnv();
+    const client = createVoiceClient(f.handlers, f.deps);
+    await client.start("cra");
+    f.emit({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
+    f.emit({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "If you say goodbye now, the fees double. Which bank?" });
+    f.emit({ type: "output_audio_buffer.stopped", response_id: "r1" });
+    await tick(10);
+    assert.equal(f.posts.filter((x) => x.url === "/api/voice/end").length, 0);
+  });
+
+  test("unmask is asked for again if the cut-off reply was still active", async () => {
+    const f = fakeEnv({ turnActions: (t) => (/4512/.test(t.text) ? [reveal()] : []) });
+    const client = createVoiceClient(f.handlers, { ...f.deps, unmaskStartMs: 500, unmaskRetryMs: 10 });
+    await client.start("cra");
+    f.emit({ type: "conversation.item.input_audio_transcription.completed", transcript: "it's 4512" });
+    await tick(10);
+    const p = client.unmask("This was a Loki drill.");
+    const asks = () => f.dc.sent.filter((e) => e.type === "response.create" && e.response.metadata?.kind === "unmask").length;
+    assert.equal(asks(), 1);
+    f.emit({ type: "error", error: { code: "conversation_already_has_active_response" } });
+    await tick(40);
+    assert.equal(asks(), 2);
+    f.emit({ type: "response.created", response: { id: "u1", metadata: { kind: "unmask" } } });
+    f.emit({ type: "error", error: { code: "response_cancel_not_active" } }); // harmless once it has started
+    await tick(40);
+    assert.equal(asks(), 2);
+    f.emit({ type: "output_audio_buffer.started", response_id: "u1" });
+    f.emit({ type: "output_audio_buffer.stopped", response_id: "u1" });
+    assert.equal(await p, true);
   });
 
   test("unmask resolves false fast when no audio starts, and the call still ends", async () => {

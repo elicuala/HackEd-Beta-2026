@@ -72,6 +72,10 @@ const ASKS_FOR_GIFT_CARD = /\b(?:gift\s?cards?|itunes|google play|steam cards?|p
 const ASKS_FOR_TRANSFER = /\b(?:bitcoin|crypto|cryptocurrency|wire|e-?transfer|interac|western union|moneygram)\b/;
 const ASKS_FOR_REMOTE = /\b(?:anydesk|teamviewer|download|remote|app|install)\b/;
 
+// "I'll send...", "I'm going to buy...", "let me go get...": a promise to pay. The payment method decides the type.
+const COMMITS_TO_PAY =
+  /\b(?:i'?ll|i will|i'?m going to|i am going to|i'?m gonna|let me)\s+(?:just\s+|go\s+(?:and\s+)?|quickly\s+)*(?:send|wire|e-?transfer|transfer|pay|buy|get|pick up|grab|purchase)\b/;
+
 // One-word replies that are not a password.
 const NOT_A_PASSWORD = new Set([
   "yes", "yeah", "yep", "yup", "no", "nope", "nah", "ok", "okay", "sure", "what", "huh", "hello", "hi",
@@ -110,6 +114,13 @@ export function findAutofail(normalized, scammer) {
   }
   if (askedForCode && saidAPassword(normalized) && !isRefusal(normalized)) {
     return { type: "password_or_code", quote: normalized.trim() };
+  }
+
+  // The person commits to paying on their own ("I'll send you the e-transfer right now"), whatever the
+  // scammer's last sentence was about.
+  if (COMMITS_TO_PAY.test(text) && !isRefusal(normalized)) {
+    if (ASKS_FOR_GIFT_CARD.test(text)) return { type: "gift_card", quote: sentenceWith(normalized, COMMITS_TO_PAY) };
+    if (ASKS_FOR_TRANSFER.test(text)) return { type: "crypto_or_wire", quote: sentenceWith(normalized, COMMITS_TO_PAY) };
   }
 
   const asks = [

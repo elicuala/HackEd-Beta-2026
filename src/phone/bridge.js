@@ -9,10 +9,13 @@ import { getCall, processTurn, endCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
 import { voiceConfig, realtimeSession, scammerInstructions } from "../voice/config.js";
 import { toneMulaw } from "./mulaw.js";
+import { unmaskInstructions, saidGoodbye } from "../../public/js/unmask-prompt.js";
 
 const REALTIME_WS_URL = "wss://api.openai.com/v1/realtime";
 const RESPONSE_TIMEOUT_MS = 12000;
 const PLAYBACK_TIMEOUT_MS = 20000;
+const SPEAK_RETRY_MS = 400; // a cut-off reply was still winding down: ask for the spoken line again
+const SPEAK_MAX_RETRIES = 2;
 
 const log = (code) => console.error(`[phone] ${code}`);
 
@@ -54,9 +57,11 @@ export function bridgeCall(twilioWs, deps) {
   let markSeq = 0;
   let tagSeq = 0;
   let queue = Promise.resolve();
+  let pendingSpeak = null; // an out-of-band line that OpenAI hasn't started yet: { tag, request, retries }
   const kinds = new Map(); // response_id → { kind, tag }
   const markWaiters = new Map(); // mark name → resolve
   const doneWaiters = new Map(); // tag → resolve
+  const spokeAudio = new Set(); // tags of out-of-band lines that produced audio
 
   // ---------- helpers ----------
 
@@ -95,15 +100,21 @@ export function bridgeCall(twilioWs, deps) {
 
   /** Out-of-band spoken line (doesn't enter the scammer's conversation). Resolves after it's played. */
   async function speak(kind, instructions) {
-    const tag = `${kind}-${++tagSeq}`;
-    const done = new Promise((resolve) => doneWaiters.set(tag, resolve));
-    toOpenAI({
-      type: "response.create",
-      response: { conversation: "none", input: [], metadata: { kind, tag }, instructions },
-    });
-    await Promise.race([done, timeout(responseTimeout, false)]);
-    doneWaiters.delete(tag);
+    let spoken = false;
+    for (let attempt = 0; attempt < 2 && !spoken && phase !== "closed"; attempt++) {
+      const tag = `${kind}-${++tagSeq}`;
+      const done = new Promise((resolve) => doneWaiters.set(tag, resolve));
+      const request = () =>
+        toOpenAI({ type: "response.create", response: { conversation: "none", input: [], metadata: { kind, tag }, instructions } });
+      pendingSpeak = { tag, request, retries: 0 };
+      request();
+      // true only if the response completed and sent audio (a failed or empty one is asked for once more)
+      spoken = (await Promise.race([done, timeout(responseTimeout, false)])) === true && spokeAudio.has(tag);
+      if (pendingSpeak?.tag === tag) pendingSpeak = null;
+      doneWaiters.delete(tag);
+    }
     await playbackDone();
+    return spoken;
   }
 
   // ---------- turns and actions (one at a time, in order) ----------
@@ -143,15 +154,36 @@ export function bridgeCall(twilioWs, deps) {
       clearPhone();
       playTone(a.ref?.sound);
       if (say) {
-        await speak(
-          "unmask",
-          "The drill is over. Step out of character and say exactly this, kindly, and nothing else: " + JSON.stringify(say)
-        );
+        const spoken = await speak("unmask", unmaskInstructions(say));
+        // The caller's voice couldn't say it (the voice service failed): the phone provider reads it instead,
+        // so the person always hears that this was a drill before the line drops.
+        if (!spoken && (await sayThenHangUp(say))) return;
       } else {
         await playbackDone();
       }
       await hangUp();
     }
+  }
+
+  /**
+   * The scammer signed off ("...Goodbye."). Without this the line just went silent until the person hung up.
+   * Let the goodbye finish playing, then end the drill: the person passed, and the unmask says so.
+   */
+  function scammerGaveUp() {
+    enqueue(async () => {
+      if (phase !== "live") return;
+      await playbackDone();
+      if (phase !== "live") return;
+      let actions = [];
+      try {
+        actions = await endCall(callId);
+      } catch {
+        log("END_FAILED");
+        return hangUp();
+      }
+      for (const a of actions) await handleAction(a);
+      if (phase === "live") await hangUp(); // already revealed elsewhere: nothing left to say
+    });
   }
 
   // ---------- take over (the person who requested the call talks instead of the AI) ----------
@@ -221,6 +253,7 @@ export function bridgeCall(twilioWs, deps) {
         const meta = ev.response?.metadata ?? {};
         const kind = meta.kind ?? "reply";
         kinds.set(ev.response?.id, { kind, tag: meta.tag ?? null });
+        if (meta.tag && pendingSpeak?.tag === meta.tag) pendingSpeak = null; // it started
         // A normal reply that starts while the ref talks (or after the reveal) is cancelled.
         if ((kind === "reply" || kind === "opening") && (refSpeaking || phase !== "live")) {
           if (refSpeaking && phase === "live") replyCut = true;
@@ -229,15 +262,20 @@ export function bridgeCall(twilioWs, deps) {
         return;
       }
       case "response.output_audio.delta": {
-        const kind = kinds.get(ev.response_id)?.kind ?? "reply";
+        const info = kinds.get(ev.response_id);
+        const kind = info?.kind ?? "reply";
         const scammer = kind === "reply" || kind === "opening";
         if (scammer && (refSpeaking || phase !== "live")) return;
+        if (info?.tag) spokeAudio.add(info.tag);
         toTwilio({ event: "media", streamSid, media: { payload: ev.delta } });
         return;
       }
       case "response.output_audio_transcript.done": {
         const kind = kinds.get(ev.response_id)?.kind ?? "reply";
-        if (kind === "reply" || kind === "opening") addTurn("scammer", ev.transcript);
+        if (kind === "reply" || kind === "opening") {
+          addTurn("scammer", ev.transcript);
+          if (kind === "reply" && saidGoodbye(ev.transcript)) scammerGaveUp();
+        }
         return;
       }
       case "conversation.item.input_audio_transcription.completed":
@@ -249,15 +287,25 @@ export function bridgeCall(twilioWs, deps) {
         return;
       case "response.done": {
         const info = kinds.get(ev.response?.id);
-        if (info?.tag) doneWaiters.get(info.tag)?.(true);
+        if (info?.tag) doneWaiters.get(info.tag)?.(ev.response?.status === "completed");
         if (info && (info.kind === "reply" || info.kind === "opening") && ev.response?.status === "cancelled" && refSpeaking) {
           replyCut = true;
         }
         return;
       }
-      case "error":
+      case "error": {
         log(`REALTIME_${String(ev.error?.code ?? ev.error?.type ?? "ERROR").toUpperCase()}`);
+        // The unmask was refused because the reply we cut off was still active: ask again in a moment.
+        const p = pendingSpeak;
+        if (p && p.retries < SPEAK_MAX_RETRIES) {
+          p.retries++;
+          const t = setTimeout(() => {
+            if (pendingSpeak === p) p.request();
+          }, SPEAK_RETRY_MS);
+          t.unref?.();
+        }
         return;
+      }
       default:
     }
   }
@@ -306,6 +354,20 @@ export function bridgeCall(twilioWs, deps) {
         callerHungUp();
       }
     });
+  }
+
+  /** Last resort for the unmask: the provider speaks `say`, then ends the call itself. */
+  async function sayThenHangUp(say) {
+    if (phase === "closed" || !callSid || !deps.sayAndHangup) return false;
+    try {
+      await deps.sayAndHangup(callSid, say);
+    } catch {
+      log("SAY_FALLBACK_FAILED");
+      return false;
+    }
+    phase = "closed"; // the provider hangs up when it's done speaking; our stream closes with it
+    close();
+    return true;
   }
 
   async function hangUp() {
