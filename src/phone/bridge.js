@@ -7,7 +7,7 @@
 import WebSocket from "ws";
 import { getCall, processTurn, endCall } from "../core/calls.js";
 import { getScenario } from "../scenarios/index.js";
-import { voiceConfig, realtimeSession } from "../voice/config.js";
+import { voiceConfig, realtimeSession, scammerInstructions } from "../voice/config.js";
 import { toneMulaw } from "./mulaw.js";
 
 const REALTIME_WS_URL = "wss://api.openai.com/v1/realtime";
@@ -303,7 +303,7 @@ export function bridgeCall(twilioWs, deps) {
     oa.on("open", () => {
       toOpenAI({
         type: "session.update",
-        session: realtimeSession({ instructions: scenario.system_prompt, ...cfg, audioFormat: "audio/pcmu" }),
+        session: realtimeSession({ instructions: scammerInstructions(scenario.system_prompt), ...cfg, audioFormat: "audio/pcmu" }),
       });
       toOpenAI({
         type: "response.create",

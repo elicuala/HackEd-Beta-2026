@@ -4,7 +4,6 @@
 import { api, friendly } from "./api.js";
 import { scenarioIcon, STATUS, eventName, fmt } from "./content.js";
 import { createFeed, createRefsView, setMeter } from "./ui/feed.js";
-import { play as playRef } from "./ref-player.js";
 import { prefs, unlock, duckMusic } from "./audio/engine.js";
 import { playSound, ring } from "./audio/sfx.js";
 import { createScore } from "./audio/score.js";
@@ -253,6 +252,12 @@ $("answer").onclick = async () => {
 
   const { createVoiceClient } = await loadClient();
   if (my !== run) return;
+  // The mic permission prompt is easy to miss: if we're still connecting after a moment, say what we're waiting for.
+  const micHint = setTimeout(() => {
+    if (my === run && $("pill").dataset.s === "connecting" && !useMock) {
+      $("refText").textContent = "Waiting for your microphone. Click Allow in the browser's prompt near the address bar.";
+    }
+  }, 2500);
   client = createVoiceClient({
     onStatus: (s) => my === run && onStatus(s),
     onTurn: (t) => my === run && feed.turn(t),
@@ -266,6 +271,8 @@ $("answer").onclick = async () => {
     await client.start(scen);
   } catch {
     /* onError already showed a friendly message */
+  } finally {
+    clearTimeout(micHint);
   }
 };
 
@@ -279,6 +286,7 @@ function onStatus(s) {
     t0 = performance.now();
     clockTimer = setInterval(() => ($("clock").textContent = fmt((performance.now() - t0) / 1000)), 500);
     $("callerLbl").textContent = "On the call";
+    $("refText").textContent = "Listening.";
     feed.sys("CALL CONNECTED");
     score = createScore();
     score.start();
@@ -324,19 +332,22 @@ async function reveal(a, my) {
     flash("good");
   }
   score?.stop();
-  setStatus("unmasking");
-  $("callerLbl").textContent = "The mask comes off";
+  // The drill is over: stop every voice now (the caller and any browser speech) and hang up. No unmask speech;
+  // the caller's "here's the trick" explanation is on the report card instead.
+  try {
+    speechSynthesis.cancel();
+  } catch {
+    /* no speech synthesis */
+  }
+  client?.pauseScammer?.();
+  client?.end?.();
+  duckMusic(false);
+  if (a.ref?.sound) playSound(a.ref.sound); // the short red-card / fanfare sting only
   $("whoLbl").textContent = "This was a Loki drill";
   $("stage").classList.add("unmasked");
   $("end").hidden = true;
   $("stopHint").hidden = true;
-  if (a.ref?.say) {
-    $("captionText").textContent = a.ref.say;
-    $("caption").hidden = false;
-    feed.unmask(a.ref.say);
-  }
-  await playRef(a, client);
-  if (my !== run) return;
+  if (a.ref?.say) feed.unmask(a.ref.say);
   try {
     sessionStorage.setItem("scamDrill.result", JSON.stringify(a));
   } catch {

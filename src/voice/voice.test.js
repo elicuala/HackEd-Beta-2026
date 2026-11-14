@@ -67,6 +67,7 @@ describe("voice routes", () => {
     assert.ok(body.openingLine.length > 0);
     assert.equal(getCall(body.callId).channel, "browser");
     assert.match(mintCalls[0].instructions, /scammer/i); // scenario.system_prompt is passed through
+    assert.match(mintCalls[0].instructions, /Nothing is recorded/); // plus the shared drill rules (stay in character)
   });
 
   test("session: bad body → 400, unknown scenario → 404 without calling OpenAI", async () => {
@@ -295,6 +296,32 @@ describe("voice client", () => {
     assert.match(open.response.instructions, /Hello, this is the tax office\./);
   });
 
+  test("staying in character: an 'I can't store that' line is cut off, kept out of the drill, and corrected", async () => {
+    const f = fakeEnv();
+    const client = createVoiceClient(f.handlers, f.deps);
+    await client.start("cra");
+    f.emit({ type: "response.created", response: { id: "r1", metadata: { kind: "reply" } } });
+    for (const delta of ["Sorry, ", "I can't store ", "personal information."]) {
+      f.emit({ type: "response.output_audio_transcript.delta", response_id: "r1", delta });
+    }
+    const sent = f.dc.sent.map((e) => e.type);
+    assert.ok(sent.includes("response.cancel") && sent.includes("output_audio_buffer.clear"), "cut off mid-line");
+    const nudge = f.dc.sent.find((e) => e.type === "conversation.item.create");
+    assert.equal(nudge.item.role, "system");
+    assert.match(nudge.item.content[0].text, /character/);
+    const again = f.dc.sent.at(-1);
+    assert.equal(again.type, "response.create");
+    assert.equal(again.response.instructions, undefined); // the character prompt stays in force
+    f.emit({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Sorry, I can't store personal information." });
+    // A normal in-character line still goes through.
+    f.emit({ type: "response.created", response: { id: "r2", metadata: { kind: "reply" } } });
+    f.emit({ type: "response.output_audio_transcript.done", response_id: "r2", transcript: "Thank you. Now, which bank do you use?" });
+    await tick(10);
+    const turns = f.posts.filter((x) => x.url === "/api/voice/turn").map((x) => x.body.turn.text);
+    assert.deepEqual(turns, ["Thank you. Now, which bank do you use?"]);
+    assert.ok(!f.log.turns.some((t) => /store/.test(t.text)), "the slip never reaches the transcript");
+  });
+
   test("turns: posted in order, redacted for the UI, victim dropped while the ref speaks", async () => {
     const f = fakeEnv();
     const client = createVoiceClient(f.handlers, f.deps);
@@ -383,6 +410,14 @@ describe("voice client", () => {
     await tick(60);
     assert.equal(f.log.status.at(-1), "ended");
     assert.equal(await client.unmask("late"), false);
+  });
+
+  test("an unanswered mic prompt → MIC_DENIED after the wait limit, not 'connecting' forever", async () => {
+    const f = fakeEnv();
+    const client = createVoiceClient(f.handlers, { ...f.deps, getUserMedia: () => new Promise(() => {}), micWaitMs: 30 });
+    await assert.rejects(client.start("cra"), { code: "MIC_DENIED" });
+    assert.deepEqual(f.log.errors.map((e) => e.code), ["MIC_DENIED"]);
+    assert.equal(f.log.status.at(-1), "ended");
   });
 
   test("mic denied → MIC_DENIED; session 502 → UPSTREAM_ERROR and the mic is released", async () => {

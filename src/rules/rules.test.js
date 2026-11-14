@@ -67,12 +67,43 @@ test("agreement: refusals always win over agreement words", () => {
 // ---------- autofails ----------
 
 test("autofail card_number: digits and spoken digits", () => {
-  assert.deepEqual(types(run("It's 4512 3344 5566 7788")), ["autofail/card_number"]);
-  assert.deepEqual(types(run("the number is four five one two")), ["autofail/card_number"]);
-  assert.deepEqual(types(run("it starts with forty five twelve")), ["autofail/card_number"]);
-  assert.deepEqual(types(run("double four five five")), ["autofail/card_number"]);
+  const card = "Read me the number on the front of your card.";
+  assert.deepEqual(types(run("It's 4512 3344 5566 7788")), ["autofail/card_number"]); // a full card number, any context
+  assert.deepEqual(types(run("the number is four five one two", card)), ["autofail/card_number"]);
+  assert.deepEqual(types(run("it starts with forty five twelve", card)), ["autofail/card_number"]);
+  assert.deepEqual(types(run("double four five five", card)), ["autofail/card_number"]);
   assert.deepEqual(types(run("4512 3344 5566 7788 and the back says 123")), ["autofail/card_number"]);
-  assert.deepEqual(types(run("4512 334 4556")), ["autofail/card_number"]);
+  assert.deepEqual(types(run("4512 334 4556", card)), ["autofail/card_number"]);
+  assert.deepEqual(types(run("my card number is four five one two")), ["autofail/card_number"]); // they said "card"
+});
+
+test("guards: four digits on their own are not a card number", () => {
+  assert.deepEqual(run("the number is four five one two"), []);
+  assert.deepEqual(run("my house number is 1204"), []);
+  assert.deepEqual(run("it's 2001"), []);
+  assert.deepEqual(types(run("1952", "What's the last four of your card?")), ["autofail/card_number"]);
+});
+
+test("guards: a year-first date of birth is a strike, not a card number", () => {
+  const dob = "Can you confirm your date of birth for me?";
+  for (const line of [
+    "My date of birth is 1952 03 03",
+    "1952-03-03",
+    "1952/3/3",
+    "It's 1952, March 3rd",
+    "nineteen fifty two, March third",
+    "nineteen fifty two oh three oh three",
+    "1952",
+  ]) {
+    assert.deepEqual(types(run(line, dob)), ["strike/confirmed_identity"], line);
+  }
+  assert.deepEqual(types(run("I was born 1952-03-03")), ["strike/confirmed_identity"]);
+  // Even right after the caller mentions an account, a year-first date is a date, not card digits.
+  const account = "Okay. Now I'll need some details to verify the account.";
+  for (const line of ["1952 March 3rd", "1952, the 3rd of March", "It's 1952 March 3rd.", "2004 on May 12th", "19 52, March 3rd"]) {
+    assert.deepEqual(types(run(line, account)), ["strike/confirmed_identity"], line);
+  }
+  assert.deepEqual(types(run("Sure, 2004 May the 12th", dob)), ["strike/confirmed_identity"]);
 });
 
 test("autofail sin_number: nine digits, or saying what the SIN is", () => {

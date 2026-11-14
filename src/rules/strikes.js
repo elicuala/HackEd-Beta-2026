@@ -1,14 +1,15 @@
 // Owned by Agent L. Strikes: mistakes that don't end the drill on their own.
 import { lower, sentenceWith } from "./normalize.js";
 import { agrees, AGREE } from "./agreement.js";
-import { DATE_PATTERNS, ADDRESS } from "./autofails.js";
+import { FULL_DATE_PATTERNS, ADDRESS } from "./autofails.js";
 
 export const LINGER_SECONDS = 45;
 
 const BANK =
   /\b(?:rbc|royal bank|td|toronto[- ]dominion|bmo|bank of montreal|scotiabank|scotia|cibc|atb|tangerine|simplii|desjardins|national bank|eq bank|hsbc)\b/;
 
-const BIRTH_WORDS = /\b(?:born|birthday|date of birth|birth date|birthdate)\b/;
+const BIRTH_WORDS = /\b(?:born|birthday|date of birth|birth date|birthdate|dob)\b/;
+const YEAR_SAID = /\b(?:19\d\d|20[0-2]\d)\b/;
 const MONTH_NAME =
   /\b(?:january|february|march|april|june|july|august|september|october|november|december)\b/;
 const FULL_NAME = /\bmy (?:full |real |legal )?name(?:'s| is)\s+([a-z][a-z'-]+)\s+([a-z][a-z'-]+)/;
@@ -38,11 +39,15 @@ const STAYS = [
 
 const any = (patterns, text) => patterns.find((p) => p.test(text));
 
-function findIdentity(text) {
+function findIdentity(text, scammer = "") {
   const name = FULL_NAME.exec(text);
   if (name && !NOT_A_NAME.has(name[1]) && !NOT_A_NAME.has(name[2])) return FULL_NAME;
   if (BIRTH_WORDS.test(text) && (/\d/.test(text) || MONTH_NAME.test(text))) return BIRTH_WORDS;
-  for (const re of [...DATE_PATTERNS.slice(0, 4), ADDRESS]) {
+  // Answering "what's your date of birth?" with a year or a month gives it away too.
+  // ("May" counts as a month here: they were asked for a date.)
+  const monthSaid = MONTH_NAME.test(text) ? MONTH_NAME : /\bmay\b/.test(text) ? /\bmay\b/ : null;
+  if (BIRTH_WORDS.test(scammer) && (YEAR_SAID.test(text) || monthSaid)) return YEAR_SAID.test(text) ? YEAR_SAID : monthSaid;
+  for (const re of [...FULL_DATE_PATTERNS, ADDRESS]) {
     const fresh = new RegExp(re.source, "i");
     if (fresh.test(text)) return fresh;
   }
@@ -60,7 +65,7 @@ export function findStrikes(normalized, scammer, secondsSinceRedFlag) {
 
   if (BANK.test(text)) found.push({ type: "confirmed_bank", quote: sentenceWith(normalized, BANK) });
 
-  const identity = findIdentity(text);
+  const identity = findIdentity(text, scammer);
   if (identity) found.push({ type: "confirmed_identity", quote: sentenceWith(normalized, identity) });
 
   if (ASKS_SECRECY.test(scammer) && agrees(normalized, KEEPS_SECRET, STAYS)) {

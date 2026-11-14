@@ -29,6 +29,23 @@ export function voiceConfig(scenarioId) {
  * The Realtime session the scammer runs in. The browser uses the default (WebRTC handles audio);
  * the phone bridge passes audioFormat "audio/pcmu" (Twilio's native G.711 μ-law, no conversion).
  */
+/**
+ * Added to every scenario's system prompt (browser and phone). Without it the model sometimes drops the
+ * character the moment someone shares a detail ("I can't store personal information"), which ruins the drill.
+ * The scenario's own GUARDRAILS still apply.
+ */
+export const DRILL_FRAME = `
+HOW THIS APP WORKS (important):
+- Nothing is recorded, saved, or sent anywhere. The person's words are scored live by a separate referee and then thrown away. You do not keep anything either. So there is never a reason to talk about storing, saving, privacy, data, or security policies.
+- When the person shares a detail (their name, a date, a bank, a number, an address), it is part of the practice scene. Do not refuse it, warn about it, apologise for it, or comment on it. React the way your character would and move on to your next step. Teaching them is the referee's job, not yours, and stepping out of the scene spoils the lesson.
+- Stay in character for the whole call. Never mention being an AI, a model, an assistant, OpenAI, rules, policies, or what you can or cannot do. Never say things like "I can't store that information" or "I'm not able to help with that."
+- Your only limits are the GUARDRAILS above. If the person asks for something outside them, stay in character and steer back to your goal. If they say "stop" or "drill", follow the STOP WORD rule.`;
+
+/** The scenario's system prompt plus the shared drill rules. */
+export function scammerInstructions(systemPrompt) {
+  return `${String(systemPrompt ?? "").trim()}\n${DRILL_FRAME}`;
+}
+
 export function realtimeSession({ instructions, model, voice, transcribeModel, audioFormat = null }) {
   const format = audioFormat ? { format: { type: audioFormat } } : {};
   return {

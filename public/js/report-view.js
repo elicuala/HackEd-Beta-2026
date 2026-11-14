@@ -65,6 +65,15 @@ export function renderReport(host, result, opts = {}) {
   head.append(ring, words);
   host.append(head);
 
+  // The caller out of character: how the trick worked (this used to be spoken at the end of the call).
+  if (result?.ref?.say) {
+    const trick = el("div", "glass");
+    const label = el("div", "label");
+    label.append(el("span", null, "How the trick worked"));
+    trick.append(label, el("div", "big", result.ref.say));
+    host.append(trick);
+  }
+
   // Timeline + replay.
   let items = [];
   if (events.length) {

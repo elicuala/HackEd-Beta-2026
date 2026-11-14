@@ -139,6 +139,7 @@ export function createVoiceClient(handlers = {}) {
       return false;
     },
     async end() {
+      if (phase === "revealed") return finish(); // the page skipped the unmask: hang up now
       if (phase !== "live") return;
       try {
         speechSynthesis.cancel();

@@ -16,6 +16,15 @@ const REVEAL_CLOSE_MS = 15000; // close everything if unmask() is never called
 const UNMASK_START_MS = 4000; // no unmask audio by then → resolve false (caller falls back to speechSynthesis)
 const UNMASK_MAX_MS = 15000;
 const TURN_RETRY_MS = 300;
+// The caller slipping out of character into assistant talk ("I can't store that", "as an AI"). Caught while it's
+// still speaking: the line is cut off, kept out of the transcript, and the caller is told to carry on in character.
+const BREAKS_CHARACTER =
+  /\b(?:as an ai|an ai (?:language )?model|language model|i['’]?m (?:just )?an ai|i am (?:just )?an ai|openai|i['’]?m (?:not able|unable) to (?:store|save|keep|retain|record|collect|process|handle|help with) (?:that|this|your|any|such|personal|sensitive)|i (?:can(?:no|['’]?)t|cannot|am not able to|['’]?m not able to|am unable to|['’]?m unable to|don['’]?t|do not|won['’]?t|will not) (?:store|save|keep|retain|record|collect|process|handle|hold on to) (?:that|this|your|any|such|personal|sensitive)|(?:store|save|keep|retain) (?:such|personal|sensitive) (?:information|info|data|details)|i (?:can(?:no|['’]?)t|cannot) (?:assist|help) with (?:that|this)|against (?:my|the) (?:guidelines|policies|policy)|for (?:your )?privacy (?:reasons|and security))/i;
+const IN_CHARACTER_NUDGE =
+  "You slipped out of character. Do not mention storing information, privacy, policies, or being an AI. " +
+  "Nothing in this drill is stored. Continue the call as your character, briefly react to what the person just said, " +
+  "and move on to your next step.";
+const MIC_WAIT_MS = 30000; // no answer to the mic prompt by then → MIC_DENIED instead of "Connecting" forever
 
 const MIC_CONSTRAINTS = {
   audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -46,6 +55,7 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     unmaskStartMs: deps.unmaskStartMs ?? UNMASK_START_MS,
     unmaskMaxMs: deps.unmaskMaxMs ?? UNMASK_MAX_MS,
     dcOpenTimeoutMs: deps.dcOpenTimeoutMs ?? DC_OPEN_TIMEOUT_MS,
+    micWaitMs: deps.micWaitMs ?? MIC_WAIT_MS,
     loadElevenLabs: deps.loadElevenLabs ?? (() => import(ELEVENLABS_CLIENT_URL)),
     elevenUnmaskStartMs: deps.elevenUnmaskStartMs ?? UNMASK_FETCH_START_MS,
   };
@@ -80,6 +90,9 @@ export function createVoiceClient(handlers = {}, deps = {}) {
   let endedByUser = false;
   let unmaskWaiter = null; // { responseId, started, resolve }
   const responseKinds = new Map(); // response_id → "opening" | "unmask" | "reply"
+  const spokenSoFar = new Map(); // response_id → the scammer's words so far (to catch a break of character)
+  const brokeCharacter = new Set(); // response ids that were cut off for breaking character
+  let lastNudgeAt = -Infinity;
   const cleanups = []; // timers to clear when the client finishes
   let eleven = null; // set when the server picks ElevenLabs for the scammer: every method then goes there
 
@@ -241,6 +254,26 @@ export function createVoiceClient(handlers = {}, deps = {}) {
     w.resolve(ok);
   }
 
+  // ---------- staying in character ----------
+
+  /** Cut off a line where the caller dropped into assistant talk, and send it back into the scene. */
+  function catchBreak(id) {
+    brokeCharacter.add(id);
+    debug("broke_character");
+    send({ type: "response.cancel", response_id: id });
+    send({ type: "output_audio_buffer.clear" });
+    if (phase !== "live" || scammerPaused || refSpeaking) return;
+    const now = env.now();
+    if (now - lastNudgeAt < 4000) return; // never loop on it
+    lastNudgeAt = now;
+    // A system message in the conversation, not response.instructions: those would replace the character prompt.
+    send({
+      type: "conversation.item.create",
+      item: { type: "message", role: "system", content: [{ type: "input_text", text: IN_CHARACTER_NUDGE }] },
+    });
+    send({ type: "response.create", response: { metadata: { kind: "reply" } } });
+  }
+
   // ---------- Realtime data channel events ----------
 
   function onServerEvent(ev) {
@@ -269,8 +302,22 @@ export function createVoiceClient(handlers = {}, deps = {}) {
         }
         return;
       }
+      case "response.output_audio_transcript.delta": {
+        const id = ev.response_id;
+        if (!id || responseKinds.get(id) === "unmask" || brokeCharacter.has(id) || phase !== "live") return;
+        const text = (spokenSoFar.get(id) ?? "") + (ev.delta ?? "");
+        spokenSoFar.set(id, text);
+        if (BREAKS_CHARACTER.test(text)) catchBreak(id);
+        return;
+      }
       case "response.output_audio_transcript.done": {
-        if (responseKinds.get(ev.response_id) === "unmask") return; // not part of the drill
+        const id = ev.response_id;
+        spokenSoFar.delete(id);
+        if (responseKinds.get(id) === "unmask") return; // not part of the drill
+        if (brokeCharacter.has(id) || BREAKS_CHARACTER.test(ev.transcript ?? "")) {
+          if (!brokeCharacter.has(id)) catchBreak(id); // missed while streaming: still correct it
+          return; // never part of the transcript or the scoring
+        }
         addTurn("scammer", ev.transcript);
         return;
       }
@@ -333,7 +380,13 @@ export function createVoiceClient(handlers = {}, deps = {}) {
       const sessionP = api("/api/voice/session", { scenarioId }).catch((e) => {
         throw Object.assign(e, { code: e.code === "UPSTREAM_ERROR" ? "UPSTREAM_ERROR" : "SESSION_FAILED" });
       });
-      const micP = env.getUserMedia(MIC_CONSTRAINTS).then(
+      // The browser waits on the user's permission prompt with no limit of its own, so cap it.
+      let micTimer = null;
+      const micWait = new Promise((_, reject) => {
+        micTimer = setTimeout(() => reject(new Error("mic prompt unanswered")), env.micWaitMs);
+      });
+      cleanups.push(() => clearTimeout(micTimer));
+      const micP = Promise.race([env.getUserMedia(MIC_CONSTRAINTS), micWait]).finally(() => clearTimeout(micTimer)).then(
         (s) => {
           mic = s;
           if (phase === "ended") stopMic(); // the start already failed or was cancelled
@@ -522,6 +575,10 @@ export function createVoiceClient(handlers = {}, deps = {}) {
 
   function end() {
     if (eleven) return eleven.end();
+    if (phase === "revealed") {
+      finish(); // the page skipped the unmask: hang up now
+      return Promise.resolve();
+    }
     if (phase === "connecting") {
       endedByUser = true;
       finish();

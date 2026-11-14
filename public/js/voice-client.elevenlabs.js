@@ -265,6 +265,10 @@ export function createElevenLabsCall(ctx) {
   }
 
   function end() {
+    if (phase === "revealed") {
+      finish(); // the page skipped the unmask: hang up now
+      return Promise.resolve();
+    }
     if (phase === "connecting") {
       finish();
       return Promise.resolve();
