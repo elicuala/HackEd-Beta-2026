@@ -64,8 +64,9 @@ export default function register(app, deps = {}) {
           url: `${cfg.publicUrl}/twilio/voice?callId=${encodeURIComponent(callId)}`,
           method: "POST",
         });
-      } catch {
-        throw upstreamError("Couldn't place the phone call", "twilio_create");
+      } catch (err) {
+        // Twilio's error code (e.g. 21219 unverified number, 21210 bad "from") goes to the log; never the number itself.
+        throw upstreamError("Couldn't place the phone call", `twilio_create_${err?.code ?? err?.status ?? "network"}`);
       }
       placed.set(callId, { callSid: call?.sid ?? null, at: Date.now() });
       res.json({ callId, watchId });
