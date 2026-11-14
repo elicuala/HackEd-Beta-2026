@@ -55,16 +55,16 @@ describe("elevenlabs routes", () => {
 
   test("unmask: speaks the line in the scammer's voice, once, only after the reveal", async () => {
     const { callId } = createCall({ scenarioId: "cra", channel: "browser" });
-    let res = await app.post("/api/voice/unmask", { callId, text: "This was a Scam Drill." });
+    let res = await app.post("/api/voice/unmask", { callId, text: "This was a Loki drill." });
     assert.equal(res.status, 409);
     assert.equal((await res.json()).error.code, "NOT_REVEALED");
 
     await endCall(callId);
-    res = await app.post("/api/voice/unmask", { callId, text: "This was a Scam Drill." });
+    res = await app.post("/api/voice/unmask", { callId, text: "This was a Loki drill." });
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("content-type"), "audio/mpeg");
     assert.equal(Buffer.from(await res.arrayBuffer()).toString(), "ID3fake-mp3");
-    assert.deepEqual(spoken, [{ text: "This was a Scam Drill.", voiceId: "voice_test" }]);
+    assert.deepEqual(spoken, [{ text: "This was a Loki drill.", voiceId: "voice_test" }]);
 
     res = await app.post("/api/voice/unmask", { callId, text: "again" });
     assert.equal(res.status, 409);

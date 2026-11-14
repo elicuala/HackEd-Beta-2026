@@ -91,7 +91,7 @@ function watch(id) {
   $("convMeta").textContent = $("scenario").selectedOptions[0]?.textContent ?? "";
   $("form").hidden = true;
   $("done").hidden = true;
-  $("stageHint").textContent = "The ref's audio plays on the phone, not here.";
+  $("stageHint").textContent = "The ref scores the call here without interrupting it. The unmask plays on the phone at the end.";
   setTakeover("hidden");
   setPill("ringing");
 
@@ -250,7 +250,7 @@ $("again").onclick = () => {
   t0 = 0;
   tookOver = false;
   $("clock").textContent = "0:00";
-  $("stageHint").textContent = "The ref's audio plays on the phone, not here.";
+  $("stageHint").textContent = "The ref scores the call here without interrupting it. The unmask plays on the phone at the end.";
   setTakeover("hidden");
   setPill("idle");
 };

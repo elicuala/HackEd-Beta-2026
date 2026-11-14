@@ -282,28 +282,21 @@ describe("phone bridge", () => {
     assert.deepEqual(tw.sent.at(-1), { event: "clear", streamSid: "MZ1" }); // barge-in
   });
 
-  test("a strike: whistle tone, the ref speaks out of band, caller audio paused meanwhile", async () => {
+  test("a strike: the ref stays quiet on the phone; the strike is still recorded for the dashboard", async () => {
     const { tw, oa, callId } = setupBridge();
     oa.in({ type: "response.created", response: { id: "r1", metadata: { kind: "opening" } } });
     oa.in({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: "Which bank do you use?" });
+    const sentBefore = oa.sent.length;
     oa.in({ type: "conversation.item.input_audio_transcription.completed", transcript: "I'm with TD." });
     await tick(10);
-    const ref = oa.sent.find((e) => e.type === "response.create" && e.response.metadata?.kind === "ref");
-    assert.ok(ref, "ref line requested");
-    assert.equal(ref.response.conversation, "none");
-    assert.match(ref.response.instructions, /Referee: Strike one/);
-    assert.ok(tw.sent.some((m) => m.event === "media" && m.media.payload.length > 1000), "tone sent");
+    assert.equal(getCall(callId).strikes, 1); // published on the call's action stream, which /phone.html shows
+    assert.ok(!oa.sent.some((e) => e.type === "response.create" && e.response?.metadata?.kind === "ref"), "no ref line");
+    assert.ok(!oa.sent.slice(sentBefore).some((e) => e.type === "response.cancel"), "the scammer isn't cut off");
+    assert.ok(!tw.sent.some((m) => m.event === "media" && m.media.payload.length > 1000), "no whistle tone");
+    assert.ok(!tw.sent.some((m) => m.event === "clear"), "the scammer's audio isn't cleared");
 
-    const before = oa.sent.length;
-    tw.in({ event: "media", media: { payload: "CCCC" } }); // ref speaking → not forwarded
-    assert.equal(oa.sent.length, before);
-
-    oa.in({ type: "response.created", response: { id: "ref1", metadata: ref.response.metadata } });
-    oa.in({ type: "response.done", response: { id: "ref1", status: "completed" } });
-    await tick(20);
-    tw.in({ event: "media", media: { payload: "DDDD" } });
+    tw.in({ event: "media", media: { payload: "DDDD" } }); // the person's audio keeps flowing
     assert.deepEqual(oa.sent.at(-1), { type: "input_audio_buffer.append", audio: "DDDD" });
-    assert.equal(getCall(callId).strikes, 1);
   });
 
   test("autofail: red card, the unmask in the scammer's voice, then Twilio hangs up", async () => {

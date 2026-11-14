@@ -24,7 +24,7 @@ const PRIVACY = [
 
 function agentBody(scenario, voice, privacy) {
   return {
-    name: `Scam Drill: ${scenario.title}`,
+    name: `Loki: ${scenario.title}`,
     tags: ["scam-drill"],
     conversationConfig: {
       agent: {

@@ -100,7 +100,7 @@ test("ref: every scenario has its own trick line", () => {
 test("ref: the failed unmask talks about the event that ended the drill", () => {
   const events = [event("strike", "confirmed_bank"), event("warning", "fear"), event("autofail", "card_number")];
   const autofail = scriptFor({ type: "reveal", outcome: "failed_autofail", scenarioId: "cra", events }).say;
-  assert.ok(autofail.includes("I said a warrant was coming today so you'd panic, and that got you to read me a card number."), autofail);
+  assert.ok(autofail.includes("I said you'd go to collections today so you'd panic, and that got you to read me a card number."), autofail);
   const strikes = scriptFor({
     type: "reveal", outcome: "failed_strikes", scenarioId: "cra",
     events: [event("strike", "confirmed_bank"), event("strike", "secrecy"), event("strike", "stayed_on_line"), event("warning", "fear")],
