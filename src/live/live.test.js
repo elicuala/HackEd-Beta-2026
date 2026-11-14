@@ -23,7 +23,7 @@ describe("live board", () => {
     await processTurn(shared, { speaker: "scammer", text: "Hello, this is Officer Grant.", t: 1 });
     const board = listBoard();
     assert.equal(board.length, 1);
-    assert.equal(board[0].title, "Tax agency call");
+    assert.equal(board[0].title, "Tax office call");
     assert.equal(board[0].status, "live");
     assert.ok(!JSON.stringify(board).includes(shared), "callId leaked");
   });

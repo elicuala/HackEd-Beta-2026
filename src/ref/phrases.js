@@ -43,7 +43,7 @@ export const REVEAL = {
 
 /** The trick each scenario is built on. Reads as: "{setup}, and {payoff}." */
 export const TRICK_SETUPS = {
-  cra: "I said a warrant was coming today so you'd panic",
+  cra: "I said you'd go to collections today so you'd panic",
   grandkid: "I played your scared grandchild so you'd rush to help",
   bank_fraud: "I posed as your bank's fraud team so you'd trust me",
 };
