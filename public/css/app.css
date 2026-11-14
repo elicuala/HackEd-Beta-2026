@@ -319,7 +319,8 @@ details.card>summary small{display:block;font-weight:400;font-size:.87rem;color:
 .takeover .mic{display:inline-flex;align-items:center;gap:8px;font-size:.93rem;font-weight:600;color:var(--green-ink)}
 .takeover .mic i{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 1.2s ease-in-out infinite}
 .takeover[data-state="on"]{border-left:4px solid var(--green)}
-.go.danger{background:var(--red);color:#fff}
+/* white text needs a deeper red than the iOS system red (#ff3b30 is only 3.6:1); same idea as --accent-fill */
+.go.danger{background:#d70015;color:#fff}
 
 /* ---------- forms (phone) ---------- */
 .form{display:grid}
