@@ -81,11 +81,11 @@ export default function register(app, deps = {}) {
     const cfg = phoneConfig();
     const signature = req.get("X-Twilio-Signature") ?? "";
     const url = `${cfg.publicUrl}${req.originalUrl}`;
-    if (!cfg.enabled || !validate(cfg.authToken, signature, url, req.body ?? {})) {
-      console.error("[phone] BAD_SIGNATURE");
+    const callId = String(req.query.callId ?? "");
+    if (!cfg.enabled || !isFromTwilio({ cfg, signature, url, body: req.body ?? {}, callId, validate })) {
+      console.error(signature ? "[phone] BAD_SIGNATURE" : "[phone] UNSIGNED_WEBHOOK_REJECTED");
       return res.status(403).type("text/plain").send("Forbidden");
     }
-    const callId = String(req.query.callId ?? "");
     const vr = new twilio.twiml.VoiceResponse();
     const call = getCall(callId);
     if (!placed.has(callId) || !call || call.channel !== "phone" || call.status !== "live") {
@@ -96,6 +96,21 @@ export default function register(app, deps = {}) {
     }
     res.type("text/xml").send(vr.toString());
   });
+}
+
+/**
+ * Is this webhook really Twilio answering a call we placed?
+ * - Signed: the X-Twilio-Signature must be valid. An invalid signature is always rejected.
+ * - Unsigned (some Twilio trial accounts don't sign webhooks): accept only if it names our account and the exact
+ *   CallSid Twilio returned when this server placed the call, within PLACED_TTL_MS. Only Twilio and this server
+ *   know that pair. The stream step then allows one connection per call (expectCall).
+ */
+function isFromTwilio({ cfg, signature, url, body, callId, validate }) {
+  if (signature) return validate(cfg.authToken, signature, url, body);
+  const p = placed.get(callId);
+  return Boolean(
+    p?.callSid && Date.now() - p.at < PLACED_TTL_MS && body.CallSid === p.callSid && body.AccountSid === cfg.accountSid,
+  );
 }
 
 /** Called by server.js with the raw http server. Handles WebSocket upgrades for /twilio/stream only. */

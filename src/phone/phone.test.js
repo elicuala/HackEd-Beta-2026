@@ -172,6 +172,45 @@ describe("phone routes", () => {
     xml = await (await form("unknown")).text();
     assert.match(xml, /<Hangup\/>/);
   });
+
+  test("twilio/voice: unsigned webhooks (trial accounts) need our account and the exact CallSid of a call we placed", async () => {
+    setPhoneEnv(true);
+    const { callId } = createCall({ scenarioId: "cra", channel: "phone" });
+    _markPlacedForTests(callId, "CA_real");
+    const unsigned = (q, body) =>
+      fetch(`${base}/twilio/voice?callId=${q}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+    validateResult = true; // must not matter: unsigned requests never go through signature validation
+    for (const body of [
+      "CallSid=CA_wrong&AccountSid=AC_test", // guessed call
+      "CallSid=CA_real&AccountSid=AC_other", // someone else's account
+      "CallSid=CA_real", // no account
+      "", // nothing
+    ]) {
+      assert.equal((await unsigned(callId, body)).status, 403, body || "(empty)");
+    }
+    assert.equal((await unsigned("not-placed", "CallSid=CA_real&AccountSid=AC_test")).status, 403);
+
+    const ok = await unsigned(callId, "CallSid=CA_real&AccountSid=AC_test");
+    assert.equal(ok.status, 200);
+    assert.match(await ok.text(), /<Connect><Stream url="wss:\/\/drill\.example\.app\/twilio\/stream">/);
+  });
+
+  test("twilio/voice: a signed webhook with a bad signature is rejected even with the right CallSid", async () => {
+    setPhoneEnv(true);
+    const { callId } = createCall({ scenarioId: "cra", channel: "phone" });
+    _markPlacedForTests(callId, "CA_real");
+    validateResult = false;
+    const res = await fetch(`${base}/twilio/voice?callId=${callId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Twilio-Signature": "forged" },
+      body: "CallSid=CA_real&AccountSid=AC_test",
+    });
+    assert.equal(res.status, 403);
+  });
 });
 
 // ---------------------------------------------------------------- bridge
